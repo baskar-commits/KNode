@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install Knode (Windows) | Knode docs</title>
+  <link rel="stylesheet" href="assets/docs-html.css" />
+</head>
+<body>
+  <article class="doc">
+    <a class="back" href="index.html">← Documentation hub</a>
+    <h1>Install Knode (Windows)</h1>
+<p><strong>Who this is for:</strong> people installing the shipped <strong>Inno Setup</strong> installer (<code>KnodeSetup-*.exe</code>), for example from a <strong>GitHub Release</strong>.</p>
+<p><strong>Developers</strong> building from source: see <a href="KNODE-MVP-GUIDE.html">KNODE-MVP-GUIDE.md</a> §4; open <code>dotnet/Knode/Knode.csproj</code> in Visual Studio or run <code>dotnet build</code> / <code>dotnet run</code> from <code>dotnet/Knode/</code>.</p>
+<hr />
+<h2>Supported environment</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OS</strong></td>
+<td><strong>Windows 10</strong> or <strong>Windows 11</strong>, <strong>64-bit (x64)</strong></td>
+</tr>
+<tr>
+<td><strong>Not supported</strong></td>
+<td>macOS, Linux, Windows ARM32, 32-bit Windows (this build targets <strong>win-x64</strong>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Prerequisites (install these before or with Knode)</h2>
+<ol>
+<li><strong><a href="https://dotnet.microsoft.com/download/dotnet/8.0">Microsoft .NET 8 <strong>Desktop</strong> Runtime</a></strong>, <strong>x64</strong>.<br />
+   The published installer uses <strong>framework-dependent</strong> deployment (<code>--self-contained false</code>). Without this runtime, Knode will not start.</li>
+<li><strong><a href="https://developer.microsoft.com/microsoft-edge/webview2/">WebView2 Runtime</a></strong>: Usually already present on Windows 10/11. If answer/source panes stay blank, install the Evergreen runtime.</li>
+</ol>
+<hr />
+<h2>Get the installer</h2>
+<ul>
+<li><strong>Recommended:</strong> Download <strong><code>KnodeSetup-x.y.z.exe</code></strong> from the project’s <strong>GitHub Releases</strong> page (artifact built with <a href="https://jrsoftware.org/isinfo.php">Inno Setup</a> via <code>dotnet/build-installer.ps1</code>).</li>
+<li><strong>Trust:</strong> Install only from <strong>official</strong> links you expect (maintainer’s repo or Release). This project does <strong>not</strong> ship through the Microsoft Store in the MVP.</li>
+</ul>
+<hr />
+<h2>Run the installer</h2>
+<ol>
+<li>Double-click <strong><code>KnodeSetup-*.exe</code></strong>.</li>
+<li>Follow the wizard (install location, shortcuts as offered).</li>
+<li>Launch <strong>Knode</strong> from the Start menu or desktop shortcut.</li>
+</ol>
+<h3>Windows SmartScreen and code signing</h3>
+<p>Release builds may be <strong>unsigned</strong> or <strong>not</strong> use a <strong>publicly trusted</strong> Authenticode certificate (common for small OSS projects). Windows <strong>SmartScreen</strong> may show <strong>“Windows protected your PC”</strong> or similar.</p>
+<ul>
+<li><strong>This is normal</strong> for many community builds, not a guarantee the app is harmful.</li>
+<li>If you choose <strong>More info → Run anyway</strong>, you are choosing to trust <strong>this publisher and this download channel</strong>. Prefer downloads <strong>only</strong> from the official Release you verified.</li>
+<li><strong>Code signing</strong> (paid cert) reduces SmartScreen friction but is optional for MVP; the project makes <strong>no</strong> claim of formal third-party security audit. See <a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md">SECURITY-AND-RELEASES.md</a>.</li>
+</ul>
+<hr />
+<h2>After install</h2>
+<p>Follow <strong><a href="KNODE-FIRST-RUN.html">KNODE-FIRST-RUN.md</a></strong> (corpus file, API key, build index, first questions).</p>
+<hr />
+<h2>Building the installer yourself (maintainers)</h2>
+<p>On a machine with <strong>.NET 8 SDK</strong> and <strong>Inno Setup 6</strong> (<code>ISCC.exe</code> on PATH):</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File dotnet/build-installer.ps1
+</code></pre>
+<p>Output: <strong><code>dotnet/dist-installer/KnodeSetup-*.exe</code></strong> (version from <code>Knode.csproj</code> / <code>Knode.iss</code>).<br />
+Published app binaries: <strong><code>dotnet/publish/</code></strong> (before Inno wraps them).</p>
+<hr />
+<h2>Privacy and network (short)</h2>
+<p>Knode sends <strong>your question</strong> and <strong>retrieved highlight text</strong> to <strong>Google Gemini</strong> when you click <strong>Ask</strong>, and calls Gemini for <strong>embeddings</strong> during <strong>Build index</strong>. Your <strong>corpus file</strong> and <strong>local index</strong> stay on your PC. Details: <a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md">SECURITY-AND-RELEASES.md</a>.</p>
+  </article>
+</body>
+</html>

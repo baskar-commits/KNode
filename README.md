@@ -47,11 +47,15 @@ Producing **`corpus.jsonl`**: **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE
 
 | Topic | Doc |
 |--------|-----|
+| **HTML doc hub** (Pages: **`docs/index.html`**) | **[`docs/index.html`](docs/index.html)** |
 | **HTML design hub** (GitHub Pages: Settings → Pages → branch `main`, folder `/docs`; **public repo** required on Free) | **[`docs/DESIGN.html`](docs/DESIGN.html)** |
-| Product, personas, architecture summary | **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE.md)** |
-| Detailed architecture (tiers, components, RAG loop) | **[`docs/KNODE-ARCHITECTURE.md`](docs/KNODE-ARCHITECTURE.md)** |
+| **Markdown → HTML** (regenerate after editing the four main guides) | Run **`python scripts/build_doc_html.py`** (`pip install -r scripts/requirements-doc-html.txt`) |
+| Product, personas, architecture summary | **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE.md)** · **[`docs/KNODE-MVP-GUIDE.html`](docs/KNODE-MVP-GUIDE.html)** |
+| Detailed architecture (tiers, components, RAG loop) | **[`docs/KNODE-ARCHITECTURE.md`](docs/KNODE-ARCHITECTURE.md)** · **[`docs/KNODE-ARCHITECTURE.html`](docs/KNODE-ARCHITECTURE.html)** |
 | Chronological decisions | **[`docs/JOURNEY.md`](docs/JOURNEY.md)** |
 | Keys, privacy, releases | **[`docs/SECURITY-AND-RELEASES.md`](docs/SECURITY-AND-RELEASES.md)** |
+| Install (HTML) | **[`docs/KNODE-INSTALL.html`](docs/KNODE-INSTALL.html)** |
+| First run (HTML) | **[`docs/KNODE-FIRST-RUN.html`](docs/KNODE-FIRST-RUN.html)** |
 
 **Legacy stubs** (short pointers into the guide): [`docs/KINDLE-INGESTION-DECISIONS.md`](docs/KINDLE-INGESTION-DECISIONS.md), [`mvp/docs/ADR-0001-mvp-stack.md`](mvp/docs/ADR-0001-mvp-stack.md). (Older **`MVP-SPEC.md`** drafts are **local-only**, gitignored.)
 

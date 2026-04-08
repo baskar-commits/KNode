@@ -1,0 +1,2 @@
+# Optional: static HTML from docs/*.md — run scripts/build_doc_html.py
+markdown>=3.5

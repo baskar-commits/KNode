@@ -1,0 +1,128 @@
+/* Shared theme for generated doc HTML + documentation hub */
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-hover: #79b8ff;
+  --rule: #21262d;
+  --maxw: 52rem;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  padding: 2rem 1.25rem 4rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+}
+.doc, .hub-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+a.back, .hub-inner a.home {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  text-decoration: none;
+}
+a.back:hover, .hub-inner a.home:hover { color: var(--accent); }
+.doc h1, .hub-inner h1 {
+  font-size: 1.85rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.35rem;
+}
+.doc h2, .hub-inner h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--rule);
+}
+.doc h3 { font-size: 1.05rem; font-weight: 600; margin: 1.35rem 0 0.5rem; }
+.doc h4 { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.4rem; }
+.doc p, .doc li, .hub-inner p { margin: 0.65rem 0; }
+.doc a, .hub-inner a { color: var(--accent); text-decoration: none; }
+.doc a:hover, .hub-inner a:hover { color: var(--accent-hover); text-decoration: underline; }
+.doc hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.75rem 0;
+}
+.doc blockquote {
+  margin: 1rem 0;
+  padding: 0.65rem 1rem;
+  border-left: 4px solid var(--accent);
+  background: var(--surface);
+  color: var(--muted);
+}
+.doc code, .doc tt {
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.doc pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.9rem;
+}
+.doc pre code { background: none; border: none; padding: 0; }
+.doc table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  margin: 1rem 0;
+}
+.doc th, .doc td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.65rem;
+  vertical-align: top;
+}
+.doc th { background: var(--surface); color: var(--muted); text-align: left; }
+.doc img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.doc ul, .doc ol { padding-left: 1.35rem; }
+.doc li { margin: 0.35rem 0; }
+.hub-inner .cards {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+@media (min-width: 640px) {
+  .hub-inner .cards { grid-template-columns: 1fr 1fr; }
+}
+.hub-inner .card {
+  display: block;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.hub-inner .card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+.hub-inner .card strong { display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
+.hub-inner .card span { font-size: 0.9rem; color: var(--muted); }

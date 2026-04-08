@@ -2,12 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Knode — redirect…</title>
-  <meta http-equiv="refresh" content="0; url=DESIGN.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="canonical" href="DESIGN.html" />
+  <title>Knode — documentation hub</title>
+  <link rel="stylesheet" href="assets/docs-html.css" />
 </head>
-<body style="font-family: system-ui, sans-serif; padding: 2rem; color: #333;">
-  <p><a href="DESIGN.html">Open Knode design hub (DESIGN.html)</a></p>
+<body>
+  <div class="hub-inner">
+    <a class="home" href="https://github.com/baskar-commits/KNode">github.com/baskar-commits/KNode</a>
+    <h1>Knode documentation hub</h1>
+    <p>Static HTML on GitHub Pages (or open these files locally). Markdown sources live alongside each page as <code>*.md</code>.</p>
+
+    <h2>Product &amp; design</h2>
+    <div class="cards">
+      <a class="card" href="DESIGN.html"><strong>DESIGN.html</strong><span>Repository overview, install pointers, Pages troubleshooting</span></a>
+      <a class="card" href="KNODE-MVP-GUIDE.html"><strong>KNODE-MVP-GUIDE</strong><span>Canonical product intent, personas, architecture summary, corpus pipeline</span></a>
+    </div>
+
+    <h2>Install &amp; run</h2>
+    <div class="cards">
+      <a class="card" href="KNODE-INSTALL.html"><strong>KNODE-INSTALL</strong><span>Windows installer, prerequisites, SmartScreen</span></a>
+      <a class="card" href="KNODE-FIRST-RUN.html"><strong>KNODE-FIRST-RUN</strong><span>Corpus, API key, index, first Ask</span></a>
+    </div>
+
+    <h2>Engineering</h2>
+    <div class="cards">
+      <a class="card" href="KNODE-ARCHITECTURE.html"><strong>KNODE-ARCHITECTURE</strong><span>Tiers, components, RAG loop, vector stores</span></a>
+    </div>
+
+    <h2>Regenerate HTML from Markdown</h2>
+    <p>From the repo root:</p>
+    <pre><code>python -m pip install -r scripts/requirements-doc-html.txt
+python scripts/build_doc_html.py</code></pre>
+    <p>Override GitHub slug: <code>set GITHUB_DOCS_SLUG=owner/repo</code> then run the script.</p>
+  </div>
 </body>
 </html>

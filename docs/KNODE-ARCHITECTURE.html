@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Knode architecture: detailed design | Knode docs</title>
+  <link rel="stylesheet" href="assets/docs-html.css" />
+</head>
+<body>
+  <article class="doc">
+    <a class="back" href="index.html">← Documentation hub</a>
+    <h1>Knode architecture: detailed design</h1>
+<p><strong>Audience:</strong> software engineers and architects reviewing <strong>Knode</strong> (<code>dotnet/Knode</code>), its <strong>vector retrieval</strong> layer, and the optional <strong>Python / Chroma</strong> path. For product intent and personas, see <a href="KNODE-MVP-GUIDE.html">KNODE-MVP-GUIDE.md</a>.</p>
+<hr />
+<h2>Agentic positioning vs what ships today</h2>
+<p><strong>Knode</strong> is marketed as an <strong>agentic AI</strong> application: a companion that <strong>grounds</strong> reasoning in <strong>your</strong> reading, <strong>selects</strong> relevant evidence, and <strong>acts</strong> through <strong>transparent</strong> outputs (citations, scoped retrieval, optional sources panel). The <strong>roadmap</strong> points to richer <strong>agentic</strong> behavior: <strong>multi-step</strong> planning, <strong>tool</strong> use (refresh corpus, validate export), and <strong>longer</strong> sessions, still anchored in the private <strong><code>corpus.jsonl</code></strong> contract.</p>
+<p><strong>Today’s shipped loop</strong> is a <strong>single</strong> well-defined <strong>agentic primitive</strong>: <strong>retrieve</strong> (semantic Top-K over a <strong>vector</strong> store after optional <strong>scope</strong> filters) <strong>then</strong> <strong>generate</strong> (one <strong>Gemini</strong> <code>generateContent</code> call constrained to retrieved passages). That pattern is <strong>RAG</strong> (retrieval-augmented generation). Naming it <strong>agentic</strong> reflects <strong>intent and UX</strong> (your library as the action space); it does <strong>not</strong> imply an autonomous multi-tool planner in the v1 binary.</p>
+<hr />
+<h2>Vector stores: two implementations (same <code>corpus.jsonl</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Vector database</th>
+<th>Embedding model</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Knode (desktop)</strong></td>
+<td><strong>Custom on-disk index</strong>, <strong>not</strong> Chroma: <strong><code>VectorIndex</code></strong> in memory at runtime + <strong><code>PersistentIndexStore</code></strong> (<code>vectors.bin</code>, <code>manifest.json</code>, <code>records.json</code> under <code>%LocalAppData%\Knode\index\</code>). Cosine similarity in C#.</td>
+<td><strong>Google Gemini</strong> <code>batchEmbedContents</code> / query embed (config default <code>gemini-embedding-001</code>).</td>
+<td><strong>End-user</strong> installs; one vendor for embed + chat.</td>
+</tr>
+<tr>
+<td><strong>Python MVP</strong></td>
+<td><strong>ChromaDB</strong> persistent collection under <strong><code>mvp/data/chroma/</code></strong>.</td>
+<td><strong>sentence-transformers</strong> <code>all-MiniLM-L6-v2</code> (local).</td>
+<td><strong>Dev / CLI</strong> prototyping; <a href="https://github.com/baskar-commits/KNode/blob/main/mvp/README.md"><code>mvp/README.md</code></a>, <a href="https://github.com/baskar-commits/KNode/tree/main/mvp/kindle_agent"><code>kindle_agent.ingest</code></a>.</td>
+</tr>
+</tbody>
+</table>
+<p>Both paths consume the <strong>same</strong> <strong><code>corpus.jsonl</code></strong> <strong>contract</strong> (one JSON per line, <code>HighlightRecord</code> shape in C#). <strong>Knode does not embed Chroma</strong> in the shipping EXE; if you hear “vector DB” for Knode, it refers to the <strong>Gemini-backed vector index</strong> files above, <strong>unless</strong> you are explicitly on the <strong>Python Chroma</strong> track.</p>
+<hr />
+<h2>System context (tiers and data flow)</h2>
+<p><strong>0 — Ingestion (offline or dev)</strong><br />
+Kindle Notebook (web) → WebView2 spike capture → optional dedupe script → <code>parse_dump</code> (Python) → <strong><code>corpus.jsonl</code></strong>.</p>
+<p><strong>1 — Presentation (WPF)</strong><br />
+<strong>Knode</strong> <code>MainWindow</code>: <strong>Ask</strong>, <strong>Setup</strong>, <strong>Help</strong>; navigation and WebView-backed answer/sources.</p>
+<p><strong>2 — Application (C#)</strong><br />
+Orchestration: config, corpus hash, optional DPAPI for keys. <strong>Build index:</strong> read JSONL, batch embed via Gemini, load <strong><code>VectorIndex</code></strong>, persist via <strong><code>PersistentIndexStore</code></strong>. <strong>Load index</strong> from disk when corpus hash and model match manifest. <strong>Ask:</strong> embed question, apply <strong>BookScope</strong> / <strong>YearScope</strong>, <strong>Top-K</strong> cosine search, assemble RAG prompt, send <strong><code>generateContent</code></strong>, render answer and sources.</p>
+<p><strong>3 — Local persistence</strong><br />
+Knode <strong><code>index/</code></strong> folder (<code>vectors.bin</code>, <code>manifest</code>, <code>records</code>); optional DPAPI key blob; <code>user_settings.json</code> for paths and UI prefs.</p>
+<p><strong>4 — External HTTPS</strong><br />
+Google Gemini embedding API and <code>generateContent</code> (configurable base URL).</p>
+<p>Edges in short: <strong><code>corpus.jsonl</code></strong> feeds the UI and orchestrator; orchestrator builds or loads the index; index and query embeddings use Gemini; retrieved passages plus prompt go to Gemini chat; answers return to the UI.</p>
+<hr />
+<h2>Component reference (what each piece does)</h2>
+<h3>Ingestion chain (outside the EXE)</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Location</th>
+<th>Inputs / outputs</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>WebView spike</strong></td>
+<td><code>spike/webview-notebook</code></td>
+<td>Notebook session → <code>spike_extract.txt</code></td>
+<td><strong>pywebview</strong> + <strong>WebView2</strong>; raw <code>innerText</code> blobs.</td>
+</tr>
+<tr>
+<td><strong>Dedupe</strong></td>
+<td><code>dedupe_spike_extract.py</code></td>
+<td>Duplicates removed → <code>spike_extract_deduped.txt</code></td>
+<td>Hash-normalized bodies; <strong>report</strong> in <code>dedupe_report.txt</code>.</td>
+</tr>
+<tr>
+<td><strong>parse_dump</strong></td>
+<td><code>mvp/kindle_agent/parse_dump.py</code></td>
+<td>Deduped text → <strong><code>corpus.jsonl</code></strong></td>
+<td>Heuristic parser; stable <strong><code>id</code></strong> per highlight; dedupes <strong>ids</strong> across sections.</td>
+</tr>
+<tr>
+<td><strong>validate_corpus</strong></td>
+<td><code>mvp/kindle_agent/validate_corpus.py</code></td>
+<td><strong><code>corpus.jsonl</code></strong> → exit code</td>
+<td><strong>Exit 0</strong> iff every row has non-empty <strong><code>book_title</code></strong>.</td>
+</tr>
+</tbody>
+</table>
+<h3>Presentation (WPF)</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Location</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MainWindow</strong></td>
+<td><code>dotnet/Knode/MainWindow.xaml(.cs)</code></td>
+<td><strong>Ask</strong> (question, chips, banner, answer WebView, collapsible sources), <strong>Setup</strong> (corpus path, key, build), <strong>Help</strong>; left nav; <code>MainNav</code> selection.</td>
+</tr>
+<tr>
+<td><strong>CorpusHelpWindow</strong></td>
+<td><code>CorpusHelpWindow.xaml</code></td>
+<td>Modal copy for <strong>corpus.jsonl</strong> pipeline.</td>
+</tr>
+<tr>
+<td><strong>MarkdownToHtml</strong> + <strong>WebView2</strong></td>
+<td><code>Services/MarkdownToHtml.cs</code></td>
+<td>Markdown → sanitized HTML for Answer / Sources.</td>
+</tr>
+</tbody>
+</table>
+<h3>Application: orchestration and RAG</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Location</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>KnodeRagService</strong></td>
+<td><code>Services/KnodeRagService.cs</code></td>
+<td><strong><code>BuildIndexAsync</code></strong>: read JSONL, filter lines, batch <strong>Gemini</strong> embed, <strong><code>VectorIndex.Load</code></strong>, <strong><code>PersistentIndexStore.SaveAsync</code></strong>. <strong><code>AskAsync</code></strong>: scope → embed question → <strong><code>VectorIndex.Search</code></strong> → build context string → <strong><code>GeminiClient.GenerateContentAsync</code></strong>.</td>
+</tr>
+<tr>
+<td><strong>GeminiClient</strong></td>
+<td><code>Services/GeminiClient.cs</code></td>
+<td>HTTP to Google Generative Language API: <strong>embed</strong> + <strong>chat</strong>.</td>
+</tr>
+<tr>
+<td><strong>VectorIndex</strong></td>
+<td><code>Services/VectorIndex.cs</code></td>
+<td>In-memory <strong>float[]</strong> vectors + <strong><code>HighlightRecord</code></strong> list; <strong>cosine</strong> Top-K search.</td>
+</tr>
+<tr>
+<td><strong>PersistentIndexStore</strong></td>
+<td><code>Services/PersistentIndexStore.cs</code></td>
+<td><strong>SHA-256</strong> of corpus file + embedding model id in <strong>manifest</strong>; load/save <strong>vectors</strong> + <strong>records</strong> for skip-rebuild when unchanged.</td>
+</tr>
+<tr>
+<td><strong>BookScopeResolver</strong> / <strong>BookScopeResult</strong></td>
+<td><code>Services/BookScope*.cs</code></td>
+<td>Restrict candidate highlight indices when question matches <strong><code>book_title</code></strong> substrings (configurable min length).</td>
+</tr>
+<tr>
+<td><strong>YearScopeResolver</strong></td>
+<td><code>Services/YearScopeResolver.cs</code></td>
+<td>Restrict by <strong><code>last_accessed</code></strong> calendar year when question mentions <strong>20xx</strong>.</td>
+</tr>
+<tr>
+<td><strong>HighlightRecord</strong> / <strong>HighlightRecordJson</strong></td>
+<td><code>Services/HighlightRecord*.cs</code></td>
+<td>JSONL row shape; deserialize with tolerant extra keys; <strong>EmbedText</strong> / <strong>CitationLine</strong> for model + UI.</td>
+</tr>
+<tr>
+<td><strong>RagQueryLogger</strong></td>
+<td><code>Services/RagQueryLogger.cs</code></td>
+<td>Optional append-only <strong><code>rag-YYYYMMDD.log</code></strong> under <code>%LocalAppData%\Knode\logs\</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3>Local artifacts (Knode, not Chroma)</h3>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>corpus.jsonl</code></strong></td>
+<td>User-supplied source of truth for highlights (path in Setup).</td>
+</tr>
+<tr>
+<td><strong><code>index/</code></strong> folder</td>
+<td><strong>Cached</strong> embeddings + metadata; safe to delete to force full <strong>re-embed</strong>.</td>
+</tr>
+<tr>
+<td><strong><code>user_settings.json</code></strong></td>
+<td>Last corpus path, UI prefs (not secrets).</td>
+</tr>
+<tr>
+<td><strong>DPAPI blob</strong></td>
+<td>Optional saved API key (see security doc).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Ask sequence (step by step)</h2>
+<ol>
+<li>User submits a question (and Top-K, scopes) in <strong>MainWindow</strong>.</li>
+<li><strong>MainWindow</strong> calls <strong>KnodeRagService.AskAsync</strong>.</li>
+<li><strong>KnodeRagService</strong> asks <strong>BookScope</strong> / <strong>YearScope</strong> for candidate index subsets (or full corpus).</li>
+<li><strong>KnodeRagService</strong> calls <strong>GeminiClient</strong> to <strong>embed the question</strong>.</li>
+<li><strong>VectorIndex.Search</strong> runs <strong>Top-K</strong> cosine similarity over vectors, respecting scope filters.</li>
+<li>Service <strong>builds the prompt</strong> from retrieved passages only (citations, no extra web context).</li>
+<li><strong>GeminiClient.GenerateContentAsync</strong> returns the answer text.</li>
+<li><strong>UI</strong> shows the answer and optional <strong>Sources</strong> expander with retrieved excerpts and scores.</li>
+</ol>
+<hr />
+<h2>Optional Python stack (ChromaDB)</h2>
+<p>Same <strong><code>corpus.jsonl</code></strong> after <strong><code>ingest</code></strong>:</p>
+<ul>
+<li><strong>Vector DB:</strong> <strong>Chroma</strong> collection on disk.</li>
+<li><strong>Embed:</strong> <strong>sentence-transformers</strong> (no Gemini required for this path).</li>
+<li><strong>Query:</strong> <strong><code>query_cli</code></strong>; optional <strong>OpenAI</strong> for synthesis.</li>
+</ul>
+<p>Use this to <strong>compare</strong> retrieval behavior or work <strong>offline</strong> from Google embed APIs; it is <strong>not</strong> bundled in <strong><code>KnodeSetup.exe</code></strong>.</p>
+<hr />
+<h2>Interfaces and dependencies (summary)</h2>
+<ul>
+<li><strong>Inbound:</strong> filesystem <strong><code>corpus.jsonl</code></strong>, user question string, <strong><code>appsettings.json</code></strong> + optional env <strong><code>GEMINI_API_KEY</code></strong> / <strong><code>AGENT_API_KEY</code></strong>, Windows <strong>DPAPI</strong> for saved key.</li>
+<li><strong>Outbound HTTPS:</strong> <strong>Google Gemini</strong> embedding + generate endpoints (configurable <strong>BaseUrl</strong>).</li>
+<li><strong>No</strong> inbound network service in MVP; <strong>no</strong> Chroma process in Knode EXE.</li>
+</ul>
+<hr />
+<h2>Revision log</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-07</td>
+<td>Expanded for engineers: Chroma vs Knode on-disk vector index, per-component tables, tiered system context, step-by-step Ask sequence, agentic product framing vs shipped RAG loop.</td>
+</tr>
+<tr>
+<td>2026-04-09</td>
+<td>Replaced diagram-only sections with prose flow (public doc set).</td>
+</tr>
+</tbody>
+</table>
+  </article>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Knode: Grounded answers across your personal knowledge | Knode docs</title>
+  <link rel="stylesheet" href="assets/docs-html.css" />
+</head>
+<body>
+  <article class="doc">
+    <a class="back" href="index.html">← Documentation hub</a>
+    <h1>Knode: Grounded answers across your personal knowledge</h1>
+<p><strong>Canonical MVP guide.</strong></p>
+<p>Picture the highlights from books you have read on <strong>Kindle</strong>, the travel scraps your family keeps in <strong>OneNote</strong>, a photo of a menu you loved, or a voice memo after a hard day. <strong>Knode</strong> is built around a simple idea: ask in normal language, and get answers that <strong>pull from your own saves</strong> and <strong>point back to them</strong>, so themes connect across reading, notes, and plans instead of sitting in separate apps.</p>
+<p>The <strong>first version</strong> proves that on <strong>Windows</strong> with <strong>Kindle reading</strong> you export into a local <strong><code>corpus.jsonl</code></strong>, then index and <strong>Ask</strong> with sources, using <strong>Google Gemini</strong>. <strong>Down the road</strong>, the same pattern extends to more of <strong>your</strong> repositories and formats (notes, documents, <strong>images</strong>, <strong>audio</strong>, <strong>video</strong>, and transcripts), still grounded in what you chose to keep.</p>
+<p><img alt="Knode Ask UI: question, coaching, answer, and collapsible sources" src="images/knode-ask-ui.png" /></p>
+<hr />
+<h2>1. Product: intent, personas, scenarios, requirements, success</h2>
+<h3>Elevator pitch</h3>
+<p><strong>Knode</strong> is a <strong>Windows desktop</strong> assistant that answers <strong>natural-language questions</strong> about <strong>your own Kindle reading</strong> using <strong>highlights and notes</strong> you ingested into a local <strong><code>corpus.jsonl</code></strong>. Answers are <strong>retrieval-grounded</strong>: the model sees <strong>your</strong> passages first, then synthesizes with <strong>citations</strong> (book, location, quote). The wedge is <strong>personal, citation-backed recall</strong>, not generic web chat.</p>
+<p><strong>Repository policy:</strong> The <strong>GitHub repo ships source and docs only</strong>: <strong>no <code>corpus.jsonl</code></strong>, no sample highlights. <strong><code>**/corpus.jsonl</code></strong> is gitignored at repo root. After clone or install, <strong>every user</strong> produces or selects their own corpus (see <a href="#4-corpus-install-and-first-run">§4</a>).</p>
+<h3>Problem</h3>
+<p>Highlights in <a href="https://read.amazon.com/notebook">Kindle Notebook</a> are organized <strong>by book</strong>, but <strong>themes span books</strong>. Finding “what did I read about confidence?” across the library is slow; keyword search misses concepts. Users want <strong>their</strong> reading connected by topic <strong>without</strong> fabricated quotes.</p>
+<h3>Primary persona (MVP)</h3>
+<p><strong>Alex, the returning reader</strong></p>
+<ul>
+<li>Reads on Kindle, highlights actively, reviews in Notebook.</li>
+<li>Wants: “What have I read about <em>X</em>?” before journaling, prep, or decisions.</li>
+<li>Expects <strong>book-level references</strong> on claims and, when retrieval supports it, <strong>cross-book threads</strong> (same theme, contrast, progression).</li>
+<li>Accepts a <strong>practical</strong> ingestion path today: <strong>export / capture → structured file → app</strong> (see <a href="#4-corpus-install-and-first-run">§4</a>), while the <strong>product language</strong> still points at Notebook as source of truth.</li>
+</ul>
+<h3>Scenarios (as shipped + near term)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Scenario</th>
+<th>Today (MVP)</th>
+<th>Intent (spec / later)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Get reading into the app</strong></td>
+<td>Produce <strong><code>corpus.jsonl</code></strong> via WebView spike + <code>parse_dump</code> (<a href="#4-corpus-install-and-first-run">§4</a>).</td>
+<td>Background sync from Notebook when a supported automation path is validated (ToS / engineering).</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Topic query</strong></td>
+<td>User asks in Knode; <strong>retrieve</strong> top passages from local index; <strong>Gemini</strong> <code>generateContent</code> with citations.</td>
+<td>Same flow; richer <strong>cross-book</strong> narrative when clustering improves.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Browse by book</strong></td>
+<td>Supported at data level in JSONL; full Notebook-parity UI is backlog.</td>
+<td>Notebook-aligned browse + “jump to related highlights.”</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Refresh corpus</strong></td>
+<td>Re-run capture + parse when you add highlights; <strong>rebuild index</strong> in app.</td>
+<td>Append + dedupe incremental sync.</td>
+</tr>
+</tbody>
+</table>
+<h3>Functional requirements (MVP: implemented vs gap)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td><strong>Structured corpus</strong> (<code>corpus.jsonl</code>, one highlight per line)</td>
+<td><strong>Done</strong> (<code>parse_dump</code>).</td>
+</tr>
+<tr>
+<td>F2</td>
+<td><strong>Semantic search</strong> over the user’s corpus</td>
+<td><strong>Done</strong> (Knode: Gemini embeddings + cosine; Python path: Chroma + MiniLM).</td>
+</tr>
+<tr>
+<td>F3</td>
+<td><strong>Citation-first</strong> answers</td>
+<td><strong>Done</strong> (prompt + sources panel).</td>
+</tr>
+<tr>
+<td>F4</td>
+<td><strong>Local-first</strong> reading data; clear <strong>privacy</strong> story for corpus</td>
+<td><strong>Done</strong> (file + local index); see security doc for API traffic.</td>
+</tr>
+<tr>
+<td>F5</td>
+<td><strong>Amazon “connector”</strong> via documented Notebook API</td>
+<td><strong>Not available</strong> publicly; <strong>workaround</strong> in <a href="#4-corpus-install-and-first-run">§4</a>.</td>
+</tr>
+<tr>
+<td>F6</td>
+<td><strong>Installer / desktop</strong> distribution</td>
+<td><strong>Done</strong> (Inno Setup + <code>build-installer.ps1</code>).</td>
+</tr>
+</tbody>
+</table>
+<h3>Non-goals (unchanged)</h3>
+<ul>
+<li>Live Microsoft / Google / WhatsApp connectors in v1.</li>
+<li>Social, shared, or public corpora.</li>
+<li>Agents that act outside <strong>read → reason → answer</strong> (no calendar/email actions).</li>
+</ul>
+<h3>Success criteria (MVP)</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Grounding</strong></td>
+<td>For ~25 <a href="https://github.com/baskar-commits/KNode/blob/main/eval/GOLDEN-QUESTIONS.md">golden questions</a>, ≥90% of factual claims supported by retrieved clips (human review).</td>
+</tr>
+<tr>
+<td><strong>Citation usefulness</strong></td>
+<td>Book + location + excerpt visible for non-obvious claims.</td>
+</tr>
+<tr>
+<td><strong>Activation</strong></td>
+<td>Median time from <strong>having <code>corpus.jsonl</code></strong> to <strong>first good answer</strong> \&lt; 15 minutes (install + index + ask).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>2. Design: options, choice, reasoning (succinct)</h2>
+<h3>What we wanted (official)</h3>
+<p>Programmatic, documented access to the <strong>same</strong> highlights the user sees in <strong>Kindle Notebook</strong>, ideally <strong>OAuth + REST</strong> (clear ToS, rate limits).</p>
+<h3>What we verified</h3>
+<ul>
+<li>No published <strong>Kindle Notebook API</strong> for third-party highlight export.</li>
+<li><a href="https://developer.amazon.com/docs/login-with-amazon/documentation-overview.html">Login with Amazon</a> is <strong>identity</strong>, not Notebook payloads.</li>
+<li><a href="https://developer.amazon.com/docs/amazon-data-portability/overview.html">Amazon Data Portability</a> <strong>Kindle-related</strong> scopes are <strong>not</strong> “export all Notebook highlight text” as of our review.</li>
+</ul>
+<p><strong>Conclusion:</strong> MVP must use <strong>user-mediated or session-based</strong> extraction, with <strong>legal/ToS</strong> review before any broad release.</p>
+<h3>Options considered (abbreviated)</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Idea</th>
+<th>Why not primary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong> Browser extension</td>
+<td>Readwise-style; session on <code>read.amazon.com</code>.</td>
+<td>Two deliverables + store review for v0.</td>
+</tr>
+<tr>
+<td><strong>B</strong> Embedded WebView</td>
+<td>Session inside desktop app; capture text.</td>
+<td><strong>Chosen for spike:</strong> one artifact, same session model as extension.</td>
+</tr>
+<tr>
+<td><strong>C</strong> Playwright / Selenium</td>
+<td>Automate browser.</td>
+<td>Heavy, fragile, worse UX for most users.</td>
+</tr>
+<tr>
+<td><strong>D</strong> Email parsing</td>
+<td>Digests from Amazon.</td>
+<td>Incomplete coverage.</td>
+</tr>
+<tr>
+<td><strong>E</strong> File-only (<code>My Clippings.txt</code>, etc.)</td>
+<td>No live Amazon interaction.</td>
+<td><strong>Fallback / dev-friendly</strong>; weaker “always fresh” story.</td>
+</tr>
+<tr>
+<td><strong>F</strong> Third-party API (e.g. Readwise)</td>
+<td>Delegate ingestion.</td>
+<td>Vendor lock-in; may conflict with local-corpus story.</td>
+</tr>
+</tbody>
+</table>
+<h3>Chosen path (MVP)</h3>
+<ol>
+<li><strong>Spike:</strong> <strong>Option B</strong>: <strong>WebView2</strong> (<code>spike/webview-notebook</code>) to prove <strong>login + readable capture</strong> from Notebook.</li>
+<li><strong>Normalize:</strong> <strong>Dedupe</strong> captures → <strong><code>parse_dump</code></strong> → <strong><code>corpus.jsonl</code></strong> (deterministic, no DOM at query time).</li>
+<li><strong>Ship:</strong> <strong>Knode</strong> reads JSONL, <strong>embeds</strong> with <strong>Gemini</strong>, stores vectors under <code>%LocalAppData%\Knode\index\</code>, <strong>answers</strong> with <strong>Gemini</strong> chat.</li>
+</ol>
+<p><strong>Reasoning:</strong> Single installer story, offline replay of parsing from text, and <strong>no</strong> dependency on Amazon DOM at RAG time, only at export time. Extension remains the <strong>upgrade</strong> if WebView login grows painful.</p>
+<hr />
+<h2>3. Architecture: layers, data flow, technologies</h2>
+<p><strong>Deep dive (tiers, components, vector stores, Ask sequence):</strong> <a href="KNODE-ARCHITECTURE.html"><code>KNODE-ARCHITECTURE.md</code></a></p>
+<h3>Layered view (static summary)</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Responsibility</th>
+<th>Technologies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Presentation</strong></td>
+<td>Browse corpus path, build index, ask question, show answer + sources</td>
+<td><strong>WPF</strong>, .NET 8</td>
+</tr>
+<tr>
+<td><strong>Application</strong></td>
+<td>Orchestrate <strong>embed batch</strong>, <strong>query embed</strong>, <strong>Top-K</strong> retrieval, <strong>RAG prompt</strong>, config</td>
+<td><strong>C#</strong> in <code>dotnet/Knode</code></td>
+</tr>
+<tr>
+<td><strong>Local data</strong></td>
+<td><strong><code>corpus.jsonl</code></strong>, persisted <strong>embeddings</strong> (<code>vectors.bin</code>, <code>manifest.json</code>, <code>records.json</code>), optional <strong>DPAPI</strong> key blob</td>
+<td>File I/O, local app data</td>
+</tr>
+<tr>
+<td><strong>External AI</strong></td>
+<td>Text embeddings + chat</td>
+<td><strong>Google Gemini</strong> (<code>gemini-embedding-001</code>, configurable chat model e.g. <code>gemini-2.5-flash</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional Python path (prototyping):</strong> same <strong><code>corpus.jsonl</code></strong> → <strong>ChromaDB</strong> + <strong>sentence-transformers</strong> + <strong><code>query_cli</code></strong>; <strong>OpenAI</strong> optional for synthesis only. See <a href="https://github.com/baskar-commits/KNode/blob/main/mvp/README.md"><code>mvp/README.md</code></a>.</p>
+<hr />
+<h2>4. Corpus, install, and first run</h2>
+<p><strong>You need a local <code>corpus.jsonl</code></strong> (one JSON object per line). It is <strong>not</strong> in git and <strong>not</strong> bundled in installers. Without a public Kindle Notebook API, a <strong>dev or power-user</strong> pipeline produces the JSONL contract the app expects.</p>
+<p><strong>Typical pipeline (this repo):</strong></p>
+<ol>
+<li><strong>WebView spike:</strong> <a href="https://github.com/baskar-commits/KNode/blob/main/spike/webview-notebook/README.md"><code>spike/webview-notebook/README.md</code></a> (Notebook login, per-book capture to <code>spike_extract.txt</code>).</li>
+<li><strong>Dedupe:</strong> <code>dedupe_spike_extract.py</code> → <code>spike_extract_deduped.txt</code>.</li>
+<li><strong>Parse / validate:</strong> from <strong><code>mvp/</code></strong>, run <strong><code>parse_dump</code></strong> and <strong><code>validate_corpus</code></strong> (see <a href="https://github.com/baskar-commits/KNode/blob/main/mvp/README.md"><code>mvp/README.md</code></a>). Output: <strong><code>mvp/data/corpus.jsonl</code></strong>. <strong><code>validate_corpus</code></strong> exits <strong>0</strong> only when every row has a non-empty <strong><code>book_title</code></strong>; fix <strong><code>author</code></strong> gaps for best citations before indexing.</li>
+<li><strong>In Knode:</strong> browse to the JSONL, <strong>Build index</strong>; after corpus changes, use <strong>Force full re-embed</strong> if highlight <strong>ids</strong> shifted (see <code>parse_dump</code> and title hashing).</li>
+</ol>
+<p><strong>Fallback:</strong> Any tool that emits the <strong>same JSONL shape</strong> works; <code>My Clippings.txt</code> is valid <strong>if</strong> you convert to that shape.</p>
+<p><strong>Runbooks (read in this order):</strong></p>
+<ol>
+<li><strong><a href="KNODE-INSTALL.html"><code>KNODE-INSTALL.md</code></a></strong>. Installer, prerequisites (.NET 8 Desktop Runtime, WebView2), SmartScreen.</li>
+<li><strong><a href="KNODE-FIRST-RUN.html"><code>KNODE-FIRST-RUN.md</code></a></strong>. Corpus path, API key, Build index, first Ask, troubleshooting.</li>
+</ol>
+<p><strong>Also useful:</strong> security and keys <a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md"><code>SECURITY-AND-RELEASES.md</code></a>; engineer-oriented tiers <a href="KNODE-ARCHITECTURE.html"><code>KNODE-ARCHITECTURE.md</code></a>; diary <a href="https://github.com/baskar-commits/KNode/blob/main/docs/JOURNEY.md"><code>JOURNEY.md</code></a>. Product vision and future sources: <a href="#5-vision-and-future-sources">§5</a>.</p>
+<hr />
+<h2>5. Vision and future sources</h2>
+<p>This section is the <strong>public</strong> north star. It stays high level so contributors and readers share the same direction without publishing private details.</p>
+<h3>What we are building toward</h3>
+<p>The through-line is <strong>your</strong> material in, <strong>cited</strong> answers out: retrieval and reasoning stay anchored to snippets, files, or media you ingested, not the open web. Experiences stay <strong>goal-directed</strong> (scoped questions, cross-source synthesis) rather than an open-ended agent running your machine.</p>
+<h3>Scenario themes (illustrative, not a commitment list)</h3>
+<ul>
+<li><strong>Reading and big moments:</strong> Connect highlights across books before a career or life decision; surface themes and tensions you already captured.</li>
+<li><strong>Family and travel notes:</strong> Patterns across itineraries, preferences, pace, and places (e.g. from notes or planners you control), with answers tied to those entries.</li>
+<li><strong>Voice and text together:</strong> Questions over transcripts, memos, and typed notes in one personal corpus, once ingestion supports them.</li>
+<li><strong>Video or talks plus reading:</strong> Relate something you saved from a clip or lecture to a passage you highlighted, with pointers to both.</li>
+<li><strong>Cross-corpus bridges:</strong> Link ideas between unrelated repositories you own (for example, a theme in reading and a pattern in trip notes).</li>
+<li><strong>Work knowledge:</strong> Recall across meeting notes, specs, or exports you choose to ingest, with provenance on each claim.</li>
+</ul>
+<p>Technical building blocks for engineers stay in <a href="#3-architecture-layers-data-flow-technologies">§3</a> and <a href="KNODE-ARCHITECTURE.html"><code>KNODE-ARCHITECTURE.md</code></a>.</p>
+<h3>Private scenario notes (local only, not for GitHub)</h3>
+<p>Rich vignettes (real names, employers, trips, or exploratory copy) belong in a <strong>local-only</strong> markdown file, for example <strong><code>docs/VISION-SCENARIOS.local.md</code></strong>, and should <strong>not</strong> be committed. Filenames ending in <strong><code>.local.md</code></strong> are <strong>gitignored</strong> at repo root so you can iterate privately; keep the <strong>canonical guide</strong> to sanitized bullets here in §5.</p>
+<hr />
+<h2>Revision log</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-09</td>
+<td>Story-style intro; §5 vision + public scenario themes; private <strong><code>*.local.md</code></strong> scenario notes + gitignore.</td>
+</tr>
+<tr>
+<td>2026-04-08</td>
+<td>Agentic product framing up front; §4 is corpus summary + INSTALL → FIRST-RUN order; long install/corpus runbooks moved to dedicated docs; em dash cleanup in this file.</td>
+</tr>
+<tr>
+<td>2026-04-07</td>
+<td>Hero screenshot; pointers to <strong>KNODE-INSTALL</strong> + <strong>KNODE-FIRST-RUN</strong> + <strong>KNODE-ARCHITECTURE</strong>; <code>validate_corpus</code> wording aligned with exit rules.</td>
+</tr>
+<tr>
+<td>2026-04-06</td>
+<td>Consolidated MVP-SPEC + ingestion decisions + ADR + runbooks into this file.</td>
+</tr>
+</tbody>
+</table>
+  </article>
+</body>
+</html>

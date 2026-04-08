@@ -251,9 +251,23 @@
     </ul>
 
     <h2 id="pages">7. Publishing this page (GitHub Pages)</h2>
-    <p>After enabling <strong>GitHub Pages</strong> for this repository with source <strong>/docs</strong> on branch <strong>main</strong>, this file is served at:</p>
-    <p class="mono" style="display:inline-block;margin:0.5rem 0;">https://baskar-commits.github.io/KNode/DESIGN.html</p>
-    <p>(Same pattern as <a href="https://baskar-commits.github.io/globalparks-cloud-network-security/DESIGN.html">globalparks-cloud-network-security/DESIGN.html</a>.)</p>
+    <p>Expected URLs once the site is live (project Pages from the <strong>/docs</strong> folder):</p>
+    <ul>
+      <li><span class="mono">https://baskar-commits.github.io/KNode/</span> — <a href="index.html">index.html</a> redirects to this page</li>
+      <li><span class="mono">https://baskar-commits.github.io/KNode/DESIGN.html</span> — this page directly</li>
+    </ul>
+
+    <h3>Turn Pages on (fix 404)</h3>
+    <ol>
+      <li>Open the repo on GitHub → <strong>Settings</strong> → <strong>Pages</strong> (left sidebar).</li>
+      <li>Under <strong>Build and deployment</strong> → <strong>Source</strong>, choose <strong>Deploy from a branch</strong>.</li>
+      <li><strong>Branch</strong>: <code>main</code> → folder <strong>/docs</strong> → <strong>Save</strong>.</li>
+      <li>Wait 1–3 minutes; refresh. If a banner shows “Your site is live at …”, use that URL.</li>
+      <li>If nothing builds, open the <strong>Actions</strong> tab and check for a failed “pages build and deployment” workflow.</li>
+    </ol>
+
+    <h3>Private repository + free account</h3>
+    <p><strong>GitHub Pages does not publish from a private repository</strong> on the free plan (personal account). You need either a <strong>public</strong> repository for this project, or a <strong>GitHub Pro</strong> (or Team/Enterprise) subscription. A generic “There isn’t a GitHub Pages site here” / 404 often means Pages is off <em>or</em> the repo is private on Free.</p>
 
     <p class="footnote">Static HTML — no Mermaid or external scripts. Update “Last updated” and links when branching or renaming the repo.</p>
   </div>

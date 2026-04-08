@@ -52,7 +52,7 @@ Producing **`corpus.jsonl`**: **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE
 | Chronological decisions | **[`docs/JOURNEY.md`](docs/JOURNEY.md)** |
 | Keys, privacy, releases | **[`docs/SECURITY-AND-RELEASES.md`](docs/SECURITY-AND-RELEASES.md)** |
 
-**Legacy stubs** (short pointers into the guide): [`MVP-SPEC.md`](MVP-SPEC.md), [`docs/KINDLE-INGESTION-DECISIONS.md`](docs/KINDLE-INGESTION-DECISIONS.md), [`mvp/docs/ADR-0001-mvp-stack.md`](mvp/docs/ADR-0001-mvp-stack.md).
+**Legacy stubs** (short pointers into the guide): [`docs/KINDLE-INGESTION-DECISIONS.md`](docs/KINDLE-INGESTION-DECISIONS.md), [`mvp/docs/ADR-0001-mvp-stack.md`](mvp/docs/ADR-0001-mvp-stack.md). (Older **`MVP-SPEC.md`** drafts are **local-only**, gitignored.)
 
 ---
 

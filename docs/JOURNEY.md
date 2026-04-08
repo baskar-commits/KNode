@@ -18,7 +18,7 @@
 - **Distribution:** local desktop for MVP.
 - **Aspirations in the spec:** OAuth to Amazon, sync from [Kindle Notebook](https://read.amazon.com/notebook), async refresh, append merge policy, cross-book narrative.
 
-**Artifact:** [`KNODE-MVP-GUIDE.md`](KNODE-MVP-GUIDE.md) §1 (successor to `MVP-SPEC.md` v0.2, preserved in git history if you use version control).
+**Artifact:** [`KNODE-MVP-GUIDE.md`](KNODE-MVP-GUIDE.md) §1 (successor to **`MVP-SPEC.md`** v0.2; that filename is **local-only** if you still keep it, not in the repo).
 
 ---
 

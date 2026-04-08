@@ -1,0 +1,37 @@
+# Dependency advisory checks (NuGet + PyPI). Does not build the installer or scan binaries; see docs/SECURITY-AND-RELEASES.md.
+name: Security audit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  scan:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pip-audit
+        run: python -m pip install --upgrade pip pip-audit
+
+      - name: NuGet vulnerable packages
+        run: |
+          dotnet restore dotnet/Knode.sln
+          dotnet list dotnet/Knode.sln package --vulnerable --include-transitive
+
+      # MVP lockfile: ignore CVE-2026-1839 (transformers) until sentence-transformers allows transformers>=5 (see SECURITY-AND-RELEASES.md).
+      - name: pip-audit mvp (requirements.txt lockfile)
+        run: pip-audit -r mvp/requirements.txt --ignore-vuln CVE-2026-1839
+
+      - name: pip-audit spike
+        run: pip-audit -r spike/webview-notebook/requirements.txt

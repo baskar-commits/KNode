@@ -1,0 +1,10 @@
+# Edit this file, then regenerate the lock:
+#   pip install pip-tools
+#   pip-compile requirements.in -o requirements.txt
+#
+# PyTorch 2.6+: see docs/SECURITY-AND-RELEASES.md (CVE-2026-1839 / transformers).
+
+chromadb>=0.5,<1
+sentence-transformers>=3,<4
+torch>=2.6,<3
+openai>=1,<2

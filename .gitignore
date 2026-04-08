@@ -1,0 +1,82 @@
+# Local secrets — never commit API keys
+
+**/appsettings.Local.json
+
+**/appsettings.*.local.json
+
+**/secrets.json
+
+*.pfx
+
+
+
+# Personal reading / highlights — NEVER commit real corpora (any folder)
+
+**/corpus.jsonl
+
+
+
+# MVP output folder: only the stub README is tracked (see mvp/data/README.md)
+
+mvp/data/*
+
+!mvp/data/README.md
+
+
+
+**/spike_extract*.txt
+
+**/spike_extract_meta.jsonl
+
+**/chroma/
+
+
+
+# Build output (when opening repo from mixed roots)
+
+**/bin/
+
+**/obj/
+
+**/publish/
+
+**/dist-installer/
+
+
+
+# IDE
+
+.vs/
+
+*.user
+
+
+
+# Local Cursor chat exports (may contain private content)
+
+scripts/chat-backups/
+
+# Local-only product narratives and private scenario drafts (e.g. docs/VISION-SCENARIOS.local.md)
+
+*.local.md
+
+
+
+# Python virtual environments
+
+.venv/
+
+**/.venv/
+
+
+
+# Unpublished / local-only docs (not shipped on public GitHub)
+
+ARTIFACT-TRAIL.md
+
+docs/VICARIOUS-LEARNINGS.md
+
+docs/knode-mvp-architecture-flowchart.html
+
+dotnet/README.md
+

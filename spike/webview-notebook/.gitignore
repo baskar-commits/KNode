@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+spike_extract.txt
+spike_extract_deduped.txt
+dedupe_report.txt
+spike_extract_meta.json
+spike_extract_meta.jsonl

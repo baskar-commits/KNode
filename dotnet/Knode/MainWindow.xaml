@@ -1,0 +1,340 @@
+<Window x:Class="Knode.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:services="clr-namespace:Knode.Services"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Knode"
+        Height="860" Width="1020"
+        MinHeight="640" MinWidth="720"
+        Background="#EFF0F4"
+        Loaded="MainWindow_Loaded">
+    <Window.Resources>
+        <Style x:Key="NavListBox" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,12,8,8"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0,2"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="ItemBorder" CornerRadius="8" Padding="10,10" Background="Transparent">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="#EEF2FF"/>
+                                            <Setter Property="Foreground" Value="#1E3A8A"/>
+                                        </Trigger>
+                                        <MultiTrigger>
+                                            <MultiTrigger.Conditions>
+                                                <Condition Property="IsSelected" Value="False"/>
+                                                <Condition Property="IsMouseOver" Value="True"/>
+                                            </MultiTrigger.Conditions>
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="#F1F5F9"/>
+                                        </MultiTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header (compact — help lives under Help nav) -->
+        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="20,14">
+            <Grid>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Knode" FontSize="20" FontWeight="SemiBold" Foreground="#0F172A"/>
+                    <TextBlock Text="Grounded Q&amp;A over your Kindle highlights" FontSize="12" Foreground="#64748B" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="#94A3B8" Text="MVP · Google Gemini"/>
+            </Grid>
+        </Border>
+
+        <!-- Body: left nav + content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="NavColumn" Width="220" MinWidth="56"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left navigation -->
+            <Border Grid.Column="0" Background="#FAFBFC" BorderBrush="#E5E7EB" BorderThickness="0,0,1,0" Padding="0,10,0,16">
+                <DockPanel LastChildFill="True">
+                    <Button x:Name="NavCollapseBtn" DockPanel.Dock="Top" Margin="10,0,10,10" Padding="8,6"
+                            Style="{StaticResource SecondaryButton}" Content="⟨⟨" FontSize="12" Click="NavCollapse_Click"
+                            ToolTip="Narrow sidebar"/>
+                    <ListBox x:Name="MainNavList" Style="{StaticResource NavListBox}" SelectionChanged="MainNav_SelectionChanged">
+                        <ListBoxItem Tag="Ask">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="💬" Margin="0,0,10,0" VerticalAlignment="Center" FontSize="14"/>
+                                <TextBlock x:Name="NavAskLabel" Text="Ask" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="Setup">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚙" Margin="0,0,10,0" VerticalAlignment="Center" FontSize="14"/>
+                                <TextBlock x:Name="NavSetupLabel" TextWrapping="Wrap" Text="Setup · Corpus &amp; index" FontSize="13.5" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="Help">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="❔" Margin="0,0,10,0" VerticalAlignment="Center" FontSize="14"/>
+                                <TextBlock x:Name="NavHelpLabel" Text="Help" FontSize="13.5" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- Content area -->
+            <Grid Grid.Column="1" Margin="20,16,22,18">
+                <!-- Ask (Perplexity-style: composer compact, answer dominates) -->
+                <Grid x:Name="AskPagePanel" Visibility="Visible">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  MaxHeight="420" Margin="0,0,8,0">
+                        <StackPanel>
+                            <Border Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="Question" Style="{StaticResource SectionTitle}"/>
+                                    <TextBox x:Name="QuestionBox" Style="{StaticResource ModernTextBox}" MinHeight="52" TextWrapping="Wrap" AcceptsReturn="True"
+                                             VerticalScrollBarVisibility="Auto"/>
+                                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="How Knode uses your library" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6"/>
+                                            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#64748B" Margin="0,0,0,4"
+                                                       Text="Answers use only retrieved highlights—not the web. Answer is synthesis; Sources are the quotes and match scores."/>
+                                            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#64748B"
+                                                       Text="Use a book title or year in your question to narrow search; the line below updates after each Ask."/>
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Text="Try a prompt" FontSize="11.5" FontWeight="SemiBold" Foreground="#64748B" Margin="0,4,0,6"/>
+                                    <WrapPanel Margin="0,0,0,2">
+                                        <Button x:Name="SampleChipCrossBook" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                Click="SampleQuestionChip_Click" Content="Cross-book themes"/>
+                                        <Button x:Name="SampleChipBookScope" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                Click="SampleQuestionChip_Click" Content="Book scope (paste title)"/>
+                                        <Button x:Name="SampleChipYearFilter" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                Click="SampleQuestionChip_Click" Content="Year filter (2024 demo)"/>
+                                        <Button x:Name="SampleChipConnectTopics" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                Click="SampleQuestionChip_Click" Content="Connect two topics"/>
+                                    </WrapPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <Button x:Name="AskBtn" Content="Ask" Style="{StaticResource PrimaryButton}" MinWidth="96"
+                                                IsEnabled="False" Click="Ask_Click"/>
+                                        <Button Content="Open Setup…" Style="{StaticResource SecondaryButton}" Margin="12,0,0,0" Padding="12,9" Click="GoSetup_Click"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock x:Name="RetrievalBanner" FontSize="12.5" Foreground="#0C4A6E" TextWrapping="Wrap"
+                                                   Text="Ask a question to see how search scoped your library."/>
+                                        <TextBlock x:Name="AskPageStatus" Margin="0,8,0,0" FontSize="11.5" Foreground="#64748B" TextWrapping="Wrap"
+                                                   Text="Loading index status…"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="?" Width="26" Height="26" Padding="0" Margin="10,0,0,0" VerticalAlignment="Top"
+                                            FontWeight="SemiBold" FontSize="13" Foreground="#0C4A6E" Background="Transparent" BorderBrush="#7DD3FC" BorderThickness="1"
+                                            Cursor="Hand" ToolTipService.ShowDuration="60000">
+                                        <Button.ToolTip>
+                                            <ToolTip MaxWidth="340">
+                                                <TextBlock Text="{x:Static services:PromptCoach.RetrievalScopeTooltip}" TextWrapping="Wrap"/>
+                                            </ToolTip>
+                                        </Button.ToolTip>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,4,0,0" VerticalAlignment="Stretch">
+                        <DockPanel LastChildFill="True">
+                            <Expander x:Name="SourcesExpander" DockPanel.Dock="Bottom" IsExpanded="False" Background="Transparent"
+                                      BorderThickness="0" Margin="0,12,0,0">
+                                <Expander.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Sources (retrieved passages)" FontSize="13" FontWeight="SemiBold" Foreground="#111827"
+                                                   VerticalAlignment="Center"/>
+                                        <Button Width="24" Height="24" Padding="0" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                FontWeight="SemiBold" FontSize="12" Foreground="#64748B" Background="#F1F5F9" BorderBrush="#E2E8F0"
+                                                BorderThickness="1" Cursor="Hand" Content="?" ToolTipService.ShowDuration="60000">
+                                            <Button.ToolTip>
+                                                <ToolTip MaxWidth="320">
+                                                    <TextBlock Text="{x:Static services:PromptCoach.SourcesSectionTooltip}" TextWrapping="Wrap"/>
+                                                </ToolTip>
+                                            </Button.ToolTip>
+                                        </Button>
+                                    </StackPanel>
+                                </Expander.Header>
+                                <wv2:WebView2 x:Name="SourcesWebView" MinHeight="200" VerticalAlignment="Stretch"/>
+                            </Expander>
+                            <DockPanel LastChildFill="True">
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <TextBlock Text="Answer" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
+                                    <Button Width="24" Height="24" Padding="0" Margin="8,0,0,0" VerticalAlignment="Center"
+                                            FontWeight="SemiBold" FontSize="12" Foreground="#64748B" Background="#F1F5F9" BorderBrush="#E2E8F0"
+                                            BorderThickness="1" Cursor="Hand" Content="?" ToolTipService.ShowDuration="60000">
+                                        <Button.ToolTip>
+                                            <ToolTip MaxWidth="320">
+                                                <TextBlock Text="{x:Static services:PromptCoach.AnswerSectionTooltip}" TextWrapping="Wrap"/>
+                                            </ToolTip>
+                                        </Button.ToolTip>
+                                    </Button>
+                                </StackPanel>
+                                <wv2:WebView2 x:Name="AnswerWebView" MinHeight="220" VerticalAlignment="Stretch"/>
+                            </DockPanel>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Setup: corpus, key, models, build (+ first-time guide) -->
+                <Grid x:Name="SetupPagePanel" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+                        <StackPanel>
+                            <Expander x:Name="GettingStartedExpander" Margin="0,0,0,12" IsExpanded="True"
+                                      Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" Padding="4,8">
+                                <Expander.Header>
+                                    <TextBlock FontWeight="SemiBold" FontSize="14" Foreground="#0F172A" Text="First-time setup — do this once per PC"/>
+                                </Expander.Header>
+                                <StackPanel Margin="8,4,8,8">
+                                    <TextBlock TextWrapping="Wrap" Foreground="#64748B" FontSize="12.5" Margin="0,0,0,12"
+                                               Text="You need a corpus file, an API key, and a built index before Ask returns grounded answers."/>
+                                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,12">
+                                        <StackPanel>
+                                            <TextBlock TextWrapping="Wrap" Margin="0,0,0,10" FontSize="13" Foreground="#334155">
+                                                <Run FontWeight="SemiBold" Foreground="#0F172A">1.</Run>
+                                                <Run Text=" Create corpus.jsonl from Kindle Notebook (WebView capture + Python parser). Use Help or:"/>
+                                            </TextBlock>
+                                            <Button Content="Open corpus help…" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,12" Click="HelpCorpus_Click"/>
+                                            <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" FontSize="13" Foreground="#334155">
+                                                <Run FontWeight="SemiBold" Foreground="#0F172A">2.</Run>
+                                                <Run Text=" Choose your file with Browse under “Highlight file”."/>
+                                            </TextBlock>
+                                            <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" FontSize="13" Foreground="#334155">
+                                                <Run FontWeight="SemiBold" Foreground="#0F172A">3.</Run>
+                                                <Run Text=" Get a Gemini API key from "/>
+                                                <Hyperlink NavigateUri="https://aistudio.google.com/apikey" RequestNavigate="HelpLink_RequestNavigate" Foreground="#0369A1">Google AI Studio</Hyperlink>
+                                                <Run Text=" — paste it below or use “Remember API key”."/>
+                                            </TextBlock>
+                                            <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" FontSize="13" Foreground="#334155">
+                                                <Run FontWeight="SemiBold" Foreground="#0F172A">4.</Run>
+                                                <Run Text=" Click Build index (check “Force full re-embed” after corpus or app updates). Then use Ask."/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                    <CheckBox x:Name="GettingStartedHideCheck" Margin="0,12,0,0" FontSize="12.5" Foreground="#334155"
+                                              Content="Don't expand this guide when Knode starts"
+                                              Checked="GettingStartedHideCheck_Changed" Unchecked="GettingStartedHideCheck_Changed"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <Border Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="148"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Highlight file" Style="{StaticResource SectionTitle}" Margin="0,0,0,6" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="CorpusPathBox" Grid.Row="0" Grid.Column="1" Style="{StaticResource ModernTextBox}" Margin="0,0,10,8" VerticalContentAlignment="Center"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Content="Browse…" Style="{StaticResource SecondaryButton}" VerticalAlignment="Top" Click="BrowseCorpus_Click"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="AI agent API key" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#374151" Margin="0,4,0,4"/>
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">
+                                        <PasswordBox x:Name="ApiKeyBox" Style="{StaticResource ModernPasswordBox}" Margin="0,0,0,6"/>
+                                        <TextBlock TextWrapping="Wrap" FontSize="11.5" Foreground="#64748B" Margin="0,0,0,6"
+                                                   Text="This MVP uses Google Gemini (Google AI Studio). Leave empty if you already saved a key."/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0">
+                                        <CheckBox x:Name="RememberApiKeyCheck" FontSize="12.5" Foreground="#334155"
+                                                  Content="Remember API key on this PC (Windows DPAPI, current user)" IsChecked="True"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <Button x:Name="ForgetApiKeyBtn" Content="Forget saved key…" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="ForgetSavedApiKey_Click"/>
+                                            <TextBlock x:Name="ApiKeySavedHint" Margin="14,8,0,0" VerticalAlignment="Center" Foreground="#15803D" FontSize="12"
+                                                       TextWrapping="Wrap" Visibility="Collapsed"
+                                                       Text="A key is saved for your Windows user. Leave the box empty to reuse it, or type a new key."/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Models" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,12,0,4"/>
+                                    <TextBlock x:Name="ModelsInfo" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,6"
+                                               TextWrapping="Wrap" Foreground="#64748B" FontSize="12"/>
+                                    <TextBlock x:Name="BuildInfoText" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,2,0,0"
+                                               FontSize="11" Foreground="#94A3B8"/>
+
+                                    <Grid Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <CheckBox x:Name="ForceFullRebuildCheck" Grid.Row="0" FontSize="12.5" Foreground="#334155"
+                                                  Content="Force full re-embed (ignore saved index in AppData\Local\Knode\index). Use after corpus edits or Knode updates."/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
+                                            <Button x:Name="BuildIndexBtn" Content="Build index" Style="{StaticResource PrimaryButton}" MinWidth="128" Click="BuildIndex_Click"/>
+                                            <TextBlock x:Name="IndexStatus" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#64748B" FontSize="12.5" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <Button Content="Back to Ask" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Click="GoAsk_Click"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- Help -->
+                <Grid x:Name="HelpPagePanel" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                        <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+                            <TextBlock Text="Help" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,8"/>
+                            <TextBlock TextWrapping="Wrap" Foreground="#64748B" FontSize="13" Margin="0,0,0,16"
+                                       Text="Knode answers from your personal Kindle highlights corpus (corpus.jsonl). Nothing is sent except your questions and retrieved passages to Google Gemini when you Ask."/>
+                            <Button Content="How do I get corpus.jsonl?" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,12" Click="HelpCorpus_Click"/>
+                            <TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Foreground="#334155" Text="API key"/>
+                            <TextBlock TextWrapping="Wrap" Foreground="#64748B" FontSize="13" Margin="0,0,0,8">
+                                <Run Text="Create a key at "/>
+                                <Hyperlink NavigateUri="https://aistudio.google.com/apikey" RequestNavigate="HelpLink_RequestNavigate" Foreground="#0369A1">Google AI Studio</Hyperlink>
+                                <Run Text=". Use Setup to save it or set GEMINI_API_KEY / AGENT_API_KEY in your environment."/>
+                            </TextBlock>
+                            <Button Content="Open Setup · Corpus &amp; index" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Click="GoSetup_Click"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

@@ -8,22 +8,22 @@
 
 ## Navigate this repo
 
-**If you only use Knode** (installed app), you do **not** need any README except this page. For the full story start with **`docs/KNODE-MVP-GUIDE.md`**; then use **Install the app** and **First run** below. **`KNODE-MVP-GUIDE`** §4 covers building **`corpus.jsonl`**.
+**If you only use Knode** (installed app), you do **not** need any README except this page. For the full story start with **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE.md)**; then use **Install the app** and **First run** below. **[KNODE-MVP-GUIDE](docs/KNODE-MVP-GUIDE.md)** §4 covers building **`corpus.jsonl`**.
 
 | If you want to… | Open |
 |-----------------|------|
-| **One doc for product intent, design, and corpus steps** | **`docs/KNODE-MVP-GUIDE.md`** |
-| **Install and First Run the Windows App** | **`docs/KNODE-INSTALL.md`**, then **`docs/KNODE-FIRST-RUN.md`** |
-| **Architecture, history, security** | **`docs/KNODE-ARCHITECTURE.md`**, **`docs/JOURNEY.md`**, **`docs/SECURITY-AND-RELEASES.md`** |
+| **One doc for product intent, design, and corpus steps** | **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE.md)** |
+| **Install and First Run the Windows App** | **[`docs/KNODE-INSTALL.md`](docs/KNODE-INSTALL.md)**, then **[`docs/KNODE-FIRST-RUN.md`](docs/KNODE-FIRST-RUN.md)** |
+| **Architecture, history, security** | **[`docs/KNODE-ARCHITECTURE.md`](docs/KNODE-ARCHITECTURE.md)**, **[`docs/JOURNEY.md`](docs/JOURNEY.md)**, **[`docs/SECURITY-AND-RELEASES.md`](docs/SECURITY-AND-RELEASES.md)** |
 
 **If you clone the repo to work on code**, subdirectory READMEs are **developer utilities** only (capture spike, Python CLI). Ignore `README.md` files inside **`mvp/.venv/`** or other dependencies—they are not project docs.
 
 | Working on… | README |
 |-------------|--------|
-| WebView capture from Kindle Notebook | **`spike/webview-notebook/README.md`** |
-| Python **`parse_dump`**, Chroma, **`query_cli`** | **`mvp/README.md`** |
+| WebView capture from Kindle Notebook | **[`spike/webview-notebook/README.md`](spike/webview-notebook/README.md)** |
+| Python **`parse_dump`**, Chroma, **`query_cli`** | **[`mvp/README.md`](mvp/README.md)** |
 
-The file **`mvp/data/README.md`** is a **short git stub** (why the folder is empty in a fresh clone); you only need it when changing ignore rules or the Python output path.
+The file **[`mvp/data/README.md`](mvp/data/README.md)** is a **short git stub** (why the folder is empty in a fresh clone); you only need it when changing ignore rules or the Python output path.
 
 ---
 
@@ -31,7 +31,7 @@ The file **`mvp/data/README.md`** is a **short git stub** (why the folder is emp
 
 End users: **[`docs/KNODE-INSTALL.md`](docs/KNODE-INSTALL.md)** — Windows x64, .NET 8 Desktop Runtime, WebView2, SmartScreen note, GitHub Release installer.
 
-Developers building the **Inno** package: `dotnet/installer/Knode.iss`, **`dotnet/build-installer.ps1`** → **`dotnet/dist-installer/KnodeSetup-*.exe`**. Distribution and trust: **[`docs/SECURITY-AND-RELEASES.md`](docs/SECURITY-AND-RELEASES.md)**.
+Developers building the **Inno** package: [`dotnet/installer/Knode.iss`](dotnet/installer/Knode.iss), [`dotnet/build-installer.ps1`](dotnet/build-installer.ps1) → **`dotnet/dist-installer/KnodeSetup-*.exe`** (build output; not committed). Distribution and trust: **[`docs/SECURITY-AND-RELEASES.md`](docs/SECURITY-AND-RELEASES.md)**.
 
 ---
 
@@ -58,9 +58,9 @@ Producing **`corpus.jsonl`**: **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE
 
 ## Repo hygiene
 
-- **`corpus.jsonl`** and **`mvp/data/*`** (except the tracked **`mvp/data/README.md`** stub) are **gitignored**; see root **`.gitignore`**.
-- **Never commit** real API keys; use **`appsettings.Local.json`** (ignored) or env vars. See **`docs/SECURITY-AND-RELEASES.md`**.
-- **UI screenshot** for the guide: **`docs/images/knode-ask-ui.png`**.
+- **`corpus.jsonl`** and **`mvp/data/*`** (except the tracked **[`mvp/data/README.md`](mvp/data/README.md)** stub) are **gitignored**; see root **[`.gitignore`](.gitignore)**.
+- **Never commit** real API keys; use **`appsettings.Local.json`** (ignored) or env vars. See **[`docs/SECURITY-AND-RELEASES.md`](docs/SECURITY-AND-RELEASES.md)**.
+- **UI screenshot** for the guide: **[`docs/images/knode-ask-ui.png`](docs/images/knode-ask-ui.png)**.
 
 ---
 

@@ -47,6 +47,7 @@ Producing **`corpus.jsonl`**: **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE
 
 | Topic | Doc |
 |--------|-----|
+| **HTML design hub** (same role as GlobalParks `DESIGN.html`; host via GitHub Pages → `/docs`) | **[`docs/DESIGN.html`](docs/DESIGN.html)** |
 | Product, personas, architecture summary | **[`docs/KNODE-MVP-GUIDE.md`](docs/KNODE-MVP-GUIDE.md)** |
 | Detailed architecture (tiers, components, RAG loop) | **[`docs/KNODE-ARCHITECTURE.md`](docs/KNODE-ARCHITECTURE.md)** |
 | Chronological decisions | **[`docs/JOURNEY.md`](docs/JOURNEY.md)** |

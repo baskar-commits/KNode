@@ -10,7 +10,7 @@
     <Product>Knode</Product>
     <AssemblyTitle>Knode</AssemblyTitle>
     <Description>Knowledge from your reading — query with citations</Description>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="HtmlSanitizer" Version="9.0.892" />

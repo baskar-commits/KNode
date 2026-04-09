@@ -1,0 +1,107 @@
+# Build KnodeSetup-*.exe on every push to main (and manual run). Create a GitHub Release when you push a version tag v* (after bumping Version in Knode.csproj / Knode.iss).
+name: Knode installer
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: knode-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-installer:
+    name: Publish, Inno, artifact, optional Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read version from Knode.csproj
+        id: ver
+        shell: pwsh
+        run: |
+          $raw = Get-Content "dotnet/Knode/Knode.csproj" -Raw
+          if ($raw -notmatch '<Version>([^<]+)</Version>') { throw "Could not find <Version> in Knode.csproj" }
+          $v = $Matches[1].Trim()
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "APP_VERSION=$v" >> $env:GITHUB_ENV
+          Write-Host "Knode.csproj Version = $v"
+
+      - name: Verify Inno script version matches csproj (fail fast)
+        shell: pwsh
+        run: |
+          $iss = Get-Content "dotnet/installer/Knode.iss" -Raw
+          if ($iss -notmatch '#define MyAppVersion "([^"]+)"') { throw "Could not parse MyAppVersion in Knode.iss" }
+          $iv = $Matches[1].Trim()
+          if ($iv -ne $env:APP_VERSION) {
+            throw "Version mismatch: Knode.csproj has $env:APP_VERSION but Knode.iss has $iv. Align both, commit, then push or tag."
+          }
+          Write-Host "Knode.iss MyAppVersion matches."
+
+      - name: Verify git tag matches csproj (release tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          if ($tag -ne $env:APP_VERSION) {
+            throw "Tag ${{ github.ref_name }} implies version $tag but Knode.csproj has $env:APP_VERSION. Bump versions on this commit, push main, then delete/recreate tag $tag."
+          }
+          Write-Host "Tag ${{ github.ref_name }} matches csproj $env:APP_VERSION."
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install Inno Setup (Chocolatey)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found after choco install innosetup" }
+          "ISCC_PATH=$iscc" >> $env:GITHUB_ENV
+          Write-Host "ISCC = $iscc"
+
+      - name: Publish Knode (Release, win-x64, framework-dependent)
+        shell: pwsh
+        run: |
+          dotnet publish "dotnet/Knode/Knode.csproj" -c Release -r win-x64 --self-contained false -o "dotnet/publish"
+
+      - name: Compile installer with Inno Setup
+        shell: pwsh
+        run: |
+          & $env:ISCC_PATH "dotnet\installer\Knode.iss"
+          Get-ChildItem "dotnet\dist-installer" | Format-Table Name, Length
+
+      - name: Verify installer file exists
+        shell: pwsh
+        run: |
+          $exe = "dotnet\dist-installer\KnodeSetup-$env:APP_VERSION.exe"
+          if (-not (Test-Path $exe)) { throw "Missing $exe" }
+          Write-Host "OK: $exe"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "KnodeSetup-${{ env.APP_VERSION }}"
+          path: "dotnet/dist-installer/KnodeSetup-${{ env.APP_VERSION }}.exe"
+          if-no-files-found: error
+
+      - name: Create GitHub Release (version tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "dotnet/dist-installer/KnodeSetup-${{ env.APP_VERSION }}.exe"
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

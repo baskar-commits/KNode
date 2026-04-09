@@ -18,11 +18,21 @@
 - Root **`.gitignore`** ignores **`**/corpus.jsonl` everywhere** in the repo, not only under `mvp/data/`, so renamed paths still cannot be committed by mistake.
 - Tracked stub only: **`mvp/data/README.md`** explains the folder; generated **`mvp/data/*`** stays local.
 
-## GitHub Releases (planned)
+## GitHub Releases
 
 - **Repository:** **public** source (code + docs under the **MIT** license in root `LICENSE`). That does **not** expose API keys if you never commit them.
-- **Release asset:** upload **`KnodeSetup-x.y.z.exe`** produced by **Inno Setup** (`dotnet/dist-installer/` after `build-installer.ps1`). End users install from the Release page; they do not need to clone or build.
-- **Tag:** e.g. `v0.2.0` matching `Knode.csproj` / `Knode.iss` version strings when you cut a release.
+- **Release asset:** **`KnodeSetup-x.y.z.exe`** from **Inno Setup** (same output as local **`dotnet/build-installer.ps1`**). End users install from the Release page; they do not need to clone or build.
+- **Tag:** e.g. **`v0.2.0`** must match **`<Version>`** in **`dotnet/Knode/Knode.csproj`** and **`#define MyAppVersion`** in **`dotnet/installer/Knode.iss`** on the tagged commit.
+
+**CI (step-by-step in Actions):** **`.github/workflows/knode-installer.yml`** runs on every push to **`main`**, on **`workflow_dispatch`**, and on tag pushes **`v*`**. It publishes **`dotnet/Knode`**, installs **Inno Setup** on the runner, compiles **`Knode.iss`**, uploads **`KnodeSetup-*`** as a **workflow artifact**, and on **`v*`** tags also creates a **GitHub Release** and attaches the **`.exe`**.
+
+**Maintainer “single command” release** (after version bump is **committed** and pushed to **`main`**):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/Push-KnodeReleaseTag.ps1
+```
+
+That creates and pushes **`vX.Y.Z`** from **`Knode.csproj`**; watch **Actions → Knode installer** for per-step logs. You can also run **`dotnet/build-installer.ps1`** locally for parity.
 
 Packaging for Windows stays **Inno Setup** unless you later add another format.
 

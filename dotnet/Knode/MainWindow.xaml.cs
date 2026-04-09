@@ -242,11 +242,16 @@ public partial class MainWindow : Window
                     var baseUrl = _config["Knode:Gemini:BaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta/";
                     _client?.Dispose();
                     _client = new GeminiClient(key, baseUrl);
-                    AskBtn.IsEnabled = true;
+                    AskBtn.IsEnabled = _rag.IsReady && !string.IsNullOrEmpty(key);
                 }
                 else if (!_rag.IsReady)
                 {
-                    IndexStatus.Text = "No saved index for this corpus — click Build index.";
+                    // TryLoadPersistedIndexAsync may have reported a specific reason via progress (shown in IndexStatus)
+                    if (string.IsNullOrWhiteSpace(IndexStatus.Text) ||
+                        IndexStatus.Text.StartsWith("Checking saved index", StringComparison.OrdinalIgnoreCase))
+                    {
+                        IndexStatus.Text = "No saved index for this corpus — click Build index.";
+                    }
                 }
             }
             catch (Exception ex)
@@ -353,7 +358,6 @@ public partial class MainWindow : Window
             }
 
             UpdateApiKeySavedHint();
-            AskBtn.IsEnabled = true;
         }
         catch (Exception ex)
         {
@@ -422,7 +426,7 @@ public partial class MainWindow : Window
         }
         finally
         {
-            AskBtn.IsEnabled = true;
+            AskBtn.IsEnabled = _rag.IsReady && !string.IsNullOrEmpty(ResolveApiKey());
         }
     }
 }

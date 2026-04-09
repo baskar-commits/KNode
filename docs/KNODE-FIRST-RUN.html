@@ -62,6 +62,10 @@
 <td>Increase <code>Knode:EmbeddingBatchDelayMs</code> in <code>appsettings.json</code> next to <strong><code>Knode.exe</code></strong> (see <code>dotnet/Knode/appsettings.json</code> in source).</td>
 </tr>
 <tr>
+<td><strong>503</strong> / “high demand” / <code>UNAVAILABLE</code> on <strong>Ask</strong> or <strong>Build index</strong></td>
+<td>Usually <strong>temporary</strong> on Google’s side. The app <strong>retries</strong> (up to several times with backoff). Wait and try <strong>Ask</strong> again; try <strong>off-peak</strong> hours; confirm quota in <strong>Google AI Studio</strong>. You can set <strong><code>ChatModel</code></strong> to another Gemini model in <code>appsettings.json</code> if one tier is overloaded.</td>
+</tr>
+<tr>
 <td>Wrong or empty retrieval</td>
 <td>Re-run <strong><code>validate_corpus</code></strong> on the JSONL; check <strong>Setup</strong> path matches the file you indexed.</td>
 </tr>

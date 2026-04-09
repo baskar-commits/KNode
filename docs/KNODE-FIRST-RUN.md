@@ -45,6 +45,7 @@ Wait until status shows **ready** (e.g. loaded or built with highlight count).
 | **Ask** disabled | Finish **Setup**: valid corpus path, key present, **Build index** succeeded. |
 | Blank Answer / Sources panes | Install **WebView2 Runtime**; restart Knode. |
 | **429** / rate limit during index | Increase `Knode:EmbeddingBatchDelayMs` in `appsettings.json` next to **`Knode.exe`** (see `dotnet/Knode/appsettings.json` in source). |
+| **503** / “high demand” / `UNAVAILABLE` on **Ask** or **Build index** | Usually **temporary** on Google’s side. The app **retries** (up to several times with backoff). Wait and try **Ask** again; try **off-peak** hours; confirm quota in **Google AI Studio**. You can set **`ChatModel`** to another Gemini model in `appsettings.json` if one tier is overloaded. |
 | Wrong or empty retrieval | Re-run **`validate_corpus`** on the JSONL; check **Setup** path matches the file you indexed. |
 
 More: [KNODE-MVP-GUIDE.md](KNODE-MVP-GUIDE.md) (product and architecture context), **[`spike/webview-notebook/QUALITY-CHECKLIST.md`](../spike/webview-notebook/QUALITY-CHECKLIST.md)** (capture quality).

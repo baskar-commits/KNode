@@ -60,7 +60,10 @@ public static class PersistentIndexStore
         message = null;
 
         if (!File.Exists(ManifestPath) || !File.Exists(RecordsPath) || !File.Exists(VectorsPath))
+        {
+            message = "No saved index in %LocalAppData%\\Knode\\index (first run on this PC, or folder was cleared).";
             return false;
+        }
 
         try
         {
@@ -78,7 +81,12 @@ public static class PersistentIndexStore
             }
 
             if (!string.Equals(manifest.CorpusSha256Hex, corpusSha256Hex, StringComparison.OrdinalIgnoreCase))
+            {
+                message =
+                    "This corpus.jsonl is different from the one used for the saved index (file changed, replaced, or sync). " +
+                    "Rebuild index, or pick the same file as before.";
                 return false;
+            }
 
             var rawRecords = File.ReadAllText(RecordsPath);
             var prepared = HighlightRecordJson.PrepareJsonText(rawRecords);

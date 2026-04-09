@@ -35,9 +35,13 @@ public sealed class KnodeRagService
 
         progress?.Report("Checking saved index…");
         var shaHex = await PersistentIndexStore.ComputeCorpusSha256HexAsync(path, ct).ConfigureAwait(false);
-        if (!PersistentIndexStore.TryLoad(_embeddingModel, shaHex, out var recs, out var vecs, out _) ||
+        if (!PersistentIndexStore.TryLoad(_embeddingModel, shaHex, out var recs, out var vecs, out var loadMsg) ||
             recs is null || vecs is null)
+        {
+            if (!string.IsNullOrEmpty(loadMsg))
+                progress?.Report(loadMsg);
             return false;
+        }
 
         _records = recs;
         _index.Load(vecs, recs);

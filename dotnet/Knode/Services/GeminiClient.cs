@@ -59,7 +59,7 @@ public sealed class GeminiClient : IDisposable
             req.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
             using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
             json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            if (resp.StatusCode == HttpStatusCode.TooManyRequests && attempt < maxAttempts)
+            if (IsTransientGeminiError(resp.StatusCode) && attempt < maxAttempts)
             {
                 var wait = ParseRetryAfterDelay(resp, json, attempt);
                 await Task.Delay(wait, ct).ConfigureAwait(false);
@@ -109,7 +109,7 @@ public sealed class GeminiClient : IDisposable
             req.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
             using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
             json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            if (resp.StatusCode == HttpStatusCode.TooManyRequests && attempt < maxAttempts)
+            if (IsTransientGeminiError(resp.StatusCode) && attempt < maxAttempts)
             {
                 await Task.Delay(ParseRetryAfterDelay(resp, json, attempt), ct).ConfigureAwait(false);
                 continue;
@@ -156,7 +156,7 @@ public sealed class GeminiClient : IDisposable
             req.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
             using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
             json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            if (resp.StatusCode == HttpStatusCode.TooManyRequests && attempt < maxAttempts)
+            if (IsTransientGeminiError(resp.StatusCode) && attempt < maxAttempts)
             {
                 await Task.Delay(ParseRetryAfterDelay(resp, json, attempt), ct).ConfigureAwait(false);
                 continue;
@@ -183,6 +183,12 @@ public sealed class GeminiClient : IDisposable
     }
 
     public void Dispose() => _http.Dispose();
+
+    /// <summary>Retry with backoff for rate limits and Gemini capacity / edge errors (429, 502, 503).</summary>
+    private static bool IsTransientGeminiError(HttpStatusCode code) =>
+        code == HttpStatusCode.TooManyRequests
+        || code == HttpStatusCode.BadGateway
+        || code == HttpStatusCode.ServiceUnavailable;
 
     /// <summary>HTTP 429 body often includes google.rpc.RetryInfo.retryDelay (e.g. "55s").</summary>
     private static TimeSpan ParseRetryAfterDelay(HttpResponseMessage resp, string jsonBody, int attempt)

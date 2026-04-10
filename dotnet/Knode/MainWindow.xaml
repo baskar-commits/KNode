@@ -60,7 +60,7 @@
                     <TextBlock Text="Knode" FontSize="20" FontWeight="SemiBold" Foreground="#0F172A"/>
                     <TextBlock Text="Grounded Q&amp;A over your Kindle highlights" FontSize="12" Foreground="#64748B" Margin="0,2,0,0"/>
                 </StackPanel>
-                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="#94A3B8" Text="MVP · Google Gemini"/>
+                <TextBlock x:Name="HeaderMetaText" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="#94A3B8" Text="MVP · Google Gemini"/>
             </Grid>
         </Border>
 
@@ -104,94 +104,82 @@
             <Grid Grid.Column="1" Margin="20,16,22,18">
                 <!-- Ask (Perplexity-style: composer compact, answer dominates) -->
                 <Grid x:Name="AskPagePanel" Visibility="Visible">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="AskMainColumn" Width="2*" MinWidth="280"/>
+                        <ColumnDefinition x:Name="AskSplitterColumn" Width="6"/>
+                        <ColumnDefinition x:Name="AskSourcesColumn" Width="*" MinWidth="260" MaxWidth="960"/>
+                    </Grid.ColumnDefinitions>
 
-                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                                  MaxHeight="420" Margin="0,0,8,0">
-                        <StackPanel>
-                            <Border Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,0,0,10">
-                                <StackPanel>
-                                    <TextBlock Text="Question" Style="{StaticResource SectionTitle}"/>
-                                    <TextBox x:Name="QuestionBox" Style="{StaticResource ModernTextBox}" MinHeight="52" TextWrapping="Wrap" AcceptsReturn="True"
-                                             VerticalScrollBarVisibility="Auto"/>
-                                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
-                                        <StackPanel>
-                                            <TextBlock Text="How Knode uses your library" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6"/>
-                                            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#64748B" Margin="0,0,0,4"
-                                                       Text="Answers use only retrieved highlights—not the web. Answer is synthesis; Sources are the quotes and match scores."/>
-                                            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#64748B"
-                                                       Text="Use a book title or year in your question to narrow search; the line below updates after each Ask."/>
+                    <!-- Left: Question + retrieval (top) and Answer (bottom), full height -->
+                    <Grid Grid.Column="0" Margin="0,0,8,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                      MaxHeight="420">
+                            <StackPanel>
+                                <Border Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Question" Style="{StaticResource SectionTitle}"/>
+                                        <TextBox x:Name="QuestionBox" Style="{StaticResource ModernTextBox}" MinHeight="52" TextWrapping="Wrap" AcceptsReturn="True"
+                                                 VerticalScrollBarVisibility="Auto"/>
+                                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+                                            <StackPanel>
+                                                <TextBlock Text="How Knode uses your library" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6"/>
+                                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#64748B" Margin="0,0,0,4"
+                                                           Text="Answers use only retrieved highlights—not the web. Answer is synthesis; Sources are the quotes and match scores."/>
+                                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#64748B"
+                                                           Text="Use a book title or year in your question to narrow search; the line below updates after each Ask."/>
+                                            </StackPanel>
+                                        </Border>
+                                        <TextBlock Text="Try a prompt" FontSize="11.5" FontWeight="SemiBold" Foreground="#64748B" Margin="0,4,0,6"/>
+                                        <WrapPanel Margin="0,0,0,2">
+                                            <Button x:Name="SampleChipCrossBook" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                    Click="SampleQuestionChip_Click" Content="Cross-book themes"/>
+                                            <Button x:Name="SampleChipBookScope" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                    Click="SampleQuestionChip_Click" Content="Book scope (paste title)"/>
+                                            <Button x:Name="SampleChipYearFilter" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                    Click="SampleQuestionChip_Click" Content="Year filter (2024 demo)"/>
+                                            <Button x:Name="SampleChipConnectTopics" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
+                                                    Click="SampleQuestionChip_Click" Content="Connect two topics"/>
+                                        </WrapPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <Button x:Name="AskBtn" Content="Ask" Style="{StaticResource PrimaryButton}" MinWidth="96"
+                                                    IsEnabled="False" Click="Ask_Click"/>
+                                            <Button Content="Open Setup…" Style="{StaticResource SecondaryButton}" Margin="12,0,0,0" Padding="12,9" Click="GoSetup_Click"/>
                                         </StackPanel>
-                                    </Border>
-                                    <TextBlock Text="Try a prompt" FontSize="11.5" FontWeight="SemiBold" Foreground="#64748B" Margin="0,4,0,6"/>
-                                    <WrapPanel Margin="0,0,0,2">
-                                        <Button x:Name="SampleChipCrossBook" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
-                                                Click="SampleQuestionChip_Click" Content="Cross-book themes"/>
-                                        <Button x:Name="SampleChipBookScope" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
-                                                Click="SampleQuestionChip_Click" Content="Book scope (paste title)"/>
-                                        <Button x:Name="SampleChipYearFilter" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
-                                                Click="SampleQuestionChip_Click" Content="Year filter (2024 demo)"/>
-                                        <Button x:Name="SampleChipConnectTopics" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="12" Margin="0,0,8,8"
-                                                Click="SampleQuestionChip_Click" Content="Connect two topics"/>
-                                    </WrapPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                        <Button x:Name="AskBtn" Content="Ask" Style="{StaticResource PrimaryButton}" MinWidth="96"
-                                                IsEnabled="False" Click="Ask_Click"/>
-                                        <Button Content="Open Setup…" Style="{StaticResource SecondaryButton}" Margin="12,0,0,0" Padding="12,9" Click="GoSetup_Click"/>
                                     </StackPanel>
-                                </StackPanel>
-                            </Border>
+                                </Border>
 
-                            <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock x:Name="RetrievalBanner" FontSize="12.5" Foreground="#0C4A6E" TextWrapping="Wrap"
-                                                   Text="Ask a question to see how search scoped your library."/>
-                                        <TextBlock x:Name="AskPageStatus" Margin="0,8,0,0" FontSize="11.5" Foreground="#64748B" TextWrapping="Wrap"
-                                                   Text="Loading index status…"/>
-                                    </StackPanel>
-                                    <Button Grid.Column="1" Content="?" Width="26" Height="26" Padding="0" Margin="10,0,0,0" VerticalAlignment="Top"
-                                            FontWeight="SemiBold" FontSize="13" Foreground="#0C4A6E" Background="Transparent" BorderBrush="#7DD3FC" BorderThickness="1"
-                                            Cursor="Hand" ToolTipService.ShowDuration="60000">
-                                        <Button.ToolTip>
-                                            <ToolTip MaxWidth="340">
-                                                <TextBlock Text="{x:Static services:PromptCoach.RetrievalScopeTooltip}" TextWrapping="Wrap"/>
-                                            </ToolTip>
-                                        </Button.ToolTip>
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,4,0,0" VerticalAlignment="Stretch">
-                        <DockPanel LastChildFill="True">
-                            <Expander x:Name="SourcesExpander" DockPanel.Dock="Bottom" IsExpanded="False" Background="Transparent"
-                                      BorderThickness="0" Margin="0,12,0,0">
-                                <Expander.Header>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Sources (retrieved passages)" FontSize="13" FontWeight="SemiBold" Foreground="#111827"
-                                                   VerticalAlignment="Center"/>
-                                        <Button Width="24" Height="24" Padding="0" Margin="8,0,0,0" VerticalAlignment="Center"
-                                                FontWeight="SemiBold" FontSize="12" Foreground="#64748B" Background="#F1F5F9" BorderBrush="#E2E8F0"
-                                                BorderThickness="1" Cursor="Hand" Content="?" ToolTipService.ShowDuration="60000">
+                                <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock x:Name="RetrievalBanner" FontSize="12.5" Foreground="#0C4A6E" TextWrapping="Wrap"
+                                                       Text="Ask a question to see how search scoped your library."/>
+                                            <TextBlock x:Name="AskPageStatus" Margin="0,8,0,0" FontSize="11.5" Foreground="#64748B" TextWrapping="Wrap"
+                                                       Text="Loading index status…"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="?" Width="26" Height="26" Padding="0" Margin="10,0,0,0" VerticalAlignment="Top"
+                                                FontWeight="SemiBold" FontSize="13" Foreground="#0C4A6E" Background="Transparent" BorderBrush="#7DD3FC" BorderThickness="1"
+                                                Cursor="Hand" ToolTipService.ShowDuration="60000">
                                             <Button.ToolTip>
-                                                <ToolTip MaxWidth="320">
-                                                    <TextBlock Text="{x:Static services:PromptCoach.SourcesSectionTooltip}" TextWrapping="Wrap"/>
+                                                <ToolTip MaxWidth="340">
+                                                    <TextBlock Text="{x:Static services:PromptCoach.RetrievalScopeTooltip}" TextWrapping="Wrap"/>
                                                 </ToolTip>
                                             </Button.ToolTip>
                                         </Button>
-                                    </StackPanel>
-                                </Expander.Header>
-                                <wv2:WebView2 x:Name="SourcesWebView" MinHeight="200" VerticalAlignment="Stretch"/>
-                            </Expander>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,4,0,0" VerticalAlignment="Stretch">
                             <DockPanel LastChildFill="True">
                                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
                                     <TextBlock Text="Answer" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
@@ -207,8 +195,46 @@
                                 </StackPanel>
                                 <wv2:WebView2 x:Name="AnswerWebView" MinHeight="220" VerticalAlignment="Stretch"/>
                             </DockPanel>
-                        </DockPanel>
-                    </Border>
+                        </Border>
+                    </Grid>
+
+                    <GridSplitter x:Name="SourcesSplitter" Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Background="#E2E8F0" BorderBrush="#CBD5E1" BorderThickness="1,0"
+                                  ResizeBehavior="PreviousAndNext" ShowsPreview="False" Cursor="SizeWE"/>
+
+                    <!-- Right: Sources full height (Question+Answer column height); narrow rail when collapsed -->
+                    <Grid x:Name="SourcesColumnHost" Grid.Column="2" VerticalAlignment="Stretch">
+                        <Border x:Name="SourcesExpandedPanel" Style="{StaticResource CardBorder}" Padding="14,16" VerticalAlignment="Stretch">
+                            <DockPanel LastChildFill="True">
+                                <DockPanel DockPanel.Dock="Top" LastChildFill="False" Margin="0,0,0,10">
+                                    <Button x:Name="SourcesRailCollapseBtn" DockPanel.Dock="Right" Padding="8,4" FontSize="12" MinWidth="40"
+                                            Style="{StaticResource SecondaryButton}" Content="⟨⟨" Click="SourcesRailCollapse_Click"
+                                            ToolTip="Narrow Sources rail (like sidebar)"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Sources" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
+                                        <TextBlock Text="(retrieved passages)" FontSize="12" Foreground="#94A3B8" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                        <Button Width="24" Height="24" Padding="0" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                FontWeight="SemiBold" FontSize="12" Foreground="#64748B" Background="#F1F5F9" BorderBrush="#E2E8F0"
+                                                BorderThickness="1" Cursor="Hand" Content="?" ToolTipService.ShowDuration="60000">
+                                            <Button.ToolTip>
+                                                <ToolTip MaxWidth="320">
+                                                    <TextBlock Text="{x:Static services:PromptCoach.SourcesSectionTooltip}" TextWrapping="Wrap"/>
+                                                </ToolTip>
+                                            </Button.ToolTip>
+                                        </Button>
+                                    </StackPanel>
+                                </DockPanel>
+                                <wv2:WebView2 x:Name="SourcesWebView" MinHeight="200" VerticalAlignment="Stretch"/>
+                            </DockPanel>
+                        </Border>
+
+                        <Border x:Name="SourcesNarrowRailPanel" Visibility="Collapsed" Style="{StaticResource CardBorder}" Padding="4,12" VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch" Background="#FAFBFC">
+                            <Button x:Name="SourcesRailExpandBtn" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Padding="4,8" FontSize="14"
+                                    Style="{StaticResource SecondaryButton}" Content="⟩⟩" Click="SourcesRailExpand_Click"
+                                    ToolTip="Expand Sources panel. Drag the splitter when open to resize width."/>
+                        </Border>
+                    </Grid>
                 </Grid>
 
                 <!-- Setup: corpus, key, models, build (+ first-time guide) -->
@@ -293,8 +319,9 @@
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="Models" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,12,0,4"/>
                                     <TextBlock x:Name="ModelsInfo" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,6"
                                                TextWrapping="Wrap" Foreground="#64748B" FontSize="12"/>
-                                    <TextBlock x:Name="BuildInfoText" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,2,0,0"
-                                               FontSize="11" Foreground="#94A3B8"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="App version" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,6,0,4"/>
+                                    <TextBlock x:Name="BuildInfoText" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0"
+                                               TextWrapping="Wrap" FontSize="11" Foreground="#94A3B8"/>
 
                                     <Grid Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
                                         <Grid.RowDefinitions>

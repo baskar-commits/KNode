@@ -33,7 +33,7 @@ The file **[`mvp/data/README.md`](mvp/data/README.md)** is a **short git stub** 
 
 End users: **[KNODE-INSTALL.html](https://baskar-commits.github.io/KNode/KNODE-INSTALL.html)** — Windows x64, .NET 8 Desktop Runtime, WebView2, SmartScreen note, GitHub Release installer.
 
-Developers building the **Inno** package: [`dotnet/installer/Knode.iss`](dotnet/installer/Knode.iss), [`dotnet/build-installer.ps1`](dotnet/build-installer.ps1) → **`dotnet/dist-installer/KnodeSetup-*.exe`** (build output; not committed). Distribution and trust: **[`SECURITY-AND-RELEASES.md`](https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md)** (GitHub).
+Developers: **local build, validation, `dotnet run`, and GitHub Actions** (exact directories and PowerShell commands) live in **[`docs/SECURITY-AND-RELEASES.md`](docs/SECURITY-AND-RELEASES.md#local-build-validation-and-github-maintainers)** under *Local build, validation, and GitHub (maintainers)*. **Inno** package: [`dotnet/installer/Knode.iss`](dotnet/installer/Knode.iss), [`dotnet/build-installer.ps1`](dotnet/build-installer.ps1) → **`dotnet/dist-installer/KnodeSetup-*.exe`** (not committed). Distribution and trust: same doc.
 
 ---
 

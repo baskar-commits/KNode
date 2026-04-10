@@ -22,7 +22,7 @@
 
 - **Repository:** **public** source (code + docs under the **MIT** license in root `LICENSE`). That does **not** expose API keys if you never commit them.
 - **Release asset:** **`KnodeSetup-x.y.z.exe`** from **Inno Setup** (same output as local **`dotnet/build-installer.ps1`**). End users install from the Release page; they do not need to clone or build.
-- **Tag:** e.g. **`v0.2.0`** must match **`<Version>`** in **`dotnet/Knode/Knode.csproj`** and **`#define MyAppVersion`** in **`dotnet/installer/Knode.iss`** on the tagged commit.
+- **Tag:** e.g. **`v0.2.1`** must match **`<Version>`** in **`dotnet/Knode/Knode.csproj`** and **`#define MyAppVersion`** in **`dotnet/installer/Knode.iss`** on the tagged commit.
 
 **CI (step-by-step in Actions):** **`.github/workflows/knode-installer.yml`** runs on every push to **`main`**, on **`workflow_dispatch`**, and on tag pushes **`v*`**. It publishes **`dotnet/Knode`**, installs **Inno Setup** on the runner, compiles **`Knode.iss`**, uploads **`KnodeSetup-*`** as a **workflow artifact**, and on **`v*`** tags also creates a **GitHub Release** and attaches the **`.exe`**.
 
@@ -39,6 +39,111 @@ Packaging for Windows stays **Inno Setup** unless you later add another format.
 ### SmartScreen, signing, and trust
 
 Community builds are often **unsigned** or not signed with a **widely trusted** Authenticode certificate. **Windows SmartScreen** may block or warn. This does **not** by itself mean the binary is malicious; users should download **only** from the **official** Release they expect and read **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)**. The project does **not** claim a formal third-party security audit; reviewers may inspect **source** and build the installer themselves.
+
+---
+
+## Local build, validation, and GitHub (maintainers)
+
+Use this section as the **single checklist** before you open the UI, before a release, and when pushing **GitHub Actions** builds. Commands below are written for **Windows PowerShell** and assume paths that match this repository layout.
+
+**Repository root** is the folder that contains **`dotnet\`**, **`docs\`**, **`scripts\`**, and **`.github\`** (on your machine that may be `...\KindleNotesAgent`). Unless a step says otherwise, **open PowerShell, `cd` to that folder, then run the command**.
+
+### Order of operations (recommended)
+
+1. **Validate dependencies** (NuGet + Python lockfiles) from repo root.  
+2. **Compile** the solution (`dotnet build`).  
+3. **Optionally** build the **Inno installer** (needs Inno Setup locally).  
+4. **Run the app** (`dotnet run`) or open the solution in Visual Studio.  
+5. When ready to ship: **commit, push `main`**, then **push tag** so **Knode installer** on Actions can attach a Release.
+
+**All-in-one (optional version bump + compile + installer):** from the repo root, run **`scripts\Build-KnodeRelease.ps1`**. It asks whether to run **`Bump-KnodeVersion.ps1`** first (then **minor** / **major** inside that script), then runs **`dotnet build`** on **`dotnet\Knode.sln`** and **`dotnet\build-installer.ps1`**. Use **`-SkipVersionBump`** when you only want to rebuild without changing the version. **GitHub Actions** and plain **`dotnet build`** do **not** run this script or prompt — that keeps CI and Visual Studio builds non-interactive.
+
+### 1. Dependency checks (before UI or release)
+
+**Directory: repository root.**
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+python -m pip install pip-audit
+powershell -ExecutionPolicy Bypass -File .\scripts\security-audit.ps1
+```
+
+`security-audit.ps1` restores **`dotnet\Knode.sln`** and runs **`dotnet list … --vulnerable`**, then **`pip-audit`** on **`mvp\requirements.txt`** and **`spike\webview-notebook\requirements.txt`**. Fix any reported issues before treating the tree as release-ready.
+
+### 2. Compile Knode (no need to open the UI yet)
+
+**Directory: repository root** (preferred):
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+dotnet build .\dotnet\Knode.sln -c Release
+```
+
+**Directory: `dotnet`** (equivalent):
+
+```powershell
+cd C:\path\to\KindleNotesAgent\dotnet
+dotnet build Knode.sln -c Release
+```
+
+A successful build confirms the **C# / WPF** project compiles. This matches the kind of compile CI exercises before packaging.
+
+### 3. Optional: publish folder + `KnodeSetup-*.exe` (parity with CI)
+
+**Directory: repository root.** Produces **`dotnet\publish\`** and, when Inno is available, **`dotnet\dist-installer\KnodeSetup-<version>.exe`**.
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+powershell -ExecutionPolicy Bypass -File .\dotnet\build-installer.ps1
+```
+
+If **`ISCC.exe`** is not on your **`PATH`** but Inno Setup 6 is installed:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\dotnet\build-installer.ps1 -InnoPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+```
+
+If Inno is missing, the script still **publish**es to **`dotnet\publish\`** and warns; you can run **`Knode.exe`** from there for a **local** install-free test.
+
+### 4. Run the Knode UI from the command line
+
+**Directory: repository root.**
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+dotnet run --project .\dotnet\Knode\Knode.csproj -c Release
+```
+
+For the default (often Debug) configuration, omit `-c Release`. Ensure **`appsettings.Local.json`** or env vars supply a **Gemini** key if you will use **Build index** / **Ask**.
+
+### 5. Push source to GitHub, then invoke **Knode installer** Actions
+
+**Directory: repository root** (your git checkout).
+
+1. Set the next **`<Version>`** and **`MyAppVersion`** (must match). The project uses **three-part** versions **Major.Minor.Patch** (e.g. **0.2.1**). Either run **`scripts\Bump-KnodeVersion.ps1`** — **minor** bumps the **patch** (`0.2.1` → `0.2.2`); **major** bumps the **middle** segment and sets patch to **0** (`0.2.1` → `0.3.0`) — or edit **`dotnet\Knode\Knode.csproj`** and **`dotnet\installer\Knode.iss`** by hand.
+
+**Other ways to keep versions in sync:** (a) always use **`Bump-KnodeVersion.ps1`**; (b) single source of truth: only **`<Version>`** and generate the Inno line in a build step; (c) **MinVer** / **GitVersion** from git tags.
+
+2. Commit and push **`main`** (this triggers **Security audit**, **Knode installer**, and other workflows on `push`):
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+git status
+git add .\dotnet\Knode\Knode.csproj .\dotnet\installer\Knode.iss
+git add .
+git commit -m "Release x.y.z: bump app and installer version"
+git push origin main
+```
+
+3. To create a **GitHub Release** and attach **`KnodeSetup-<version>.exe`**, push an annotated **tag** that matches `<Version>` (see **`scripts\Push-KnodeReleaseTag.ps1`**). **Directory: repository root.**
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+powershell -ExecutionPolicy Bypass -File .\scripts\Push-KnodeReleaseTag.ps1 -WhatIf
+powershell -ExecutionPolicy Bypass -File .\scripts\Push-KnodeReleaseTag.ps1
+```
+
+The second command **creates and pushes** `v` + semver from the csproj. On GitHub: **Actions → Knode installer** for step-by-step logs; **Releases** for the downloadable **`.exe`**. You can also run **Knode installer** manually from the Actions tab (**Run workflow**) without a tag; that build uploads an **artifact** but does not create a Release.
 
 ---
 

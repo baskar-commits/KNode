@@ -9,6 +9,9 @@ public sealed class KnodeUserSettingsData
 
     /// <summary>When true, the setup checklist expander starts collapsed.</summary>
     public bool GettingStartedGuideHidden { get; set; }
+
+    /// <summary>When true, Ask page Sources rail starts hidden (Answer uses full width).</summary>
+    public bool SourcesPanelCollapsed { get; set; }
 }
 
 /// <summary>Plain JSON under %LocalAppData%\Knode (path only; not secret).</summary>
@@ -61,6 +64,20 @@ public static class KnodeUserSettings
 
         var data = TryLoadData() ?? new KnodeUserSettingsData();
         data.GettingStartedGuideHidden = hidden;
+        File.WriteAllText(FilePath, JsonSerializer.Serialize(data, s_json));
+    }
+
+    public static bool IsSourcesPanelCollapsed() =>
+        TryLoadData()?.SourcesPanelCollapsed == true;
+
+    public static void SaveSourcesPanelCollapsed(bool collapsed)
+    {
+        var dir = Path.GetDirectoryName(FilePath);
+        if (dir != null)
+            Directory.CreateDirectory(dir);
+
+        var data = TryLoadData() ?? new KnodeUserSettingsData();
+        data.SourcesPanelCollapsed = collapsed;
         File.WriteAllText(FilePath, JsonSerializer.Serialize(data, s_json));
     }
 }

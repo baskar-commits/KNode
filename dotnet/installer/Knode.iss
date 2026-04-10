@@ -1,8 +1,8 @@
-; Knode Windows installer (Inno Setup 6+)
+﻿; Knode Windows installer (Inno Setup 6+)
 ; Run from repo: powershell -File dotnet/build-installer.ps1
 
 #define MyAppName "Knode"
-#define MyAppVersion "0.2.1"
+#define MyAppVersion "0.2.2"
 #define MyAppPublisher "KindleNotesAgent"
 #define MyAppExeName "Knode.exe"
 #define PublishDir "..\publish"

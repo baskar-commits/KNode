@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly KnodeRagService _rag;
     private GeminiClient? _client;
     private bool _navExpanded = true;
+    private GridLength? _sourcesColumnWidthRestore;
 
     public MainWindow()
     {
@@ -41,19 +42,34 @@ public partial class MainWindow : Window
             $"Embeddings: {emb}  ·  Chat: {chat}  ·  Adjust in appsettings.json. " +
             $"Gemini keys: https://aistudio.google.com/apikey";
 
+        var displayVer = GetAppDisplayVersion();
+        if (!string.IsNullOrEmpty(displayVer))
+        {
+            Title = $"Knode · {displayVer}";
+            HeaderMetaText.Text = $"v{displayVer} · MVP · Google Gemini";
+        }
+
         try
         {
             var dllPath = Assembly.GetExecutingAssembly().Location;
             if (!string.IsNullOrEmpty(dllPath))
             {
                 var t = File.GetLastWriteTimeUtc(dllPath);
-                BuildInfoText.Text =
-                    $"This build: {t:yyyy-MM-dd HH:mm} UTC — use this time to confirm you are not running an old Knode.exe.";
+                if (string.IsNullOrEmpty(displayVer))
+                {
+                    BuildInfoText.Text =
+                        $"Built {t:yyyy-MM-dd HH:mm} UTC — use this time to confirm you are not running an old Knode.exe.";
+                }
+                else
+                {
+                    BuildInfoText.Text =
+                        $"Version {displayVer}\nBuilt {t:yyyy-MM-dd HH:mm} UTC — compare with the installer or GitHub release you expect.";
+                }
             }
         }
         catch
         {
-            BuildInfoText.Text = "";
+            BuildInfoText.Text = string.IsNullOrEmpty(displayVer) ? "" : $"Version {displayVer}";
         }
 
         var defaultCorpus = _config["Knode:CorpusPath"];
@@ -111,6 +127,58 @@ public partial class MainWindow : Window
         }
 
         await TryRestoreSessionAsync().ConfigureAwait(true);
+
+        ApplySourcesPanelCollapsed(KnodeUserSettings.IsSourcesPanelCollapsed());
+    }
+
+    private void SourcesRailCollapse_Click(object sender, RoutedEventArgs e)
+    {
+        ApplySourcesPanelCollapsed(true);
+        KnodeUserSettings.SaveSourcesPanelCollapsed(true);
+    }
+
+    private void SourcesRailExpand_Click(object sender, RoutedEventArgs e)
+    {
+        ApplySourcesPanelCollapsed(false);
+        KnodeUserSettings.SaveSourcesPanelCollapsed(false);
+    }
+
+    /// <summary>Narrow rail (like left nav) when true; full Sources + splitter when false.</summary>
+    private void ApplySourcesPanelCollapsed(bool collapsed)
+    {
+        if (AskSourcesColumn is null || AskSplitterColumn is null || SourcesSplitter is null
+            || SourcesExpandedPanel is null || SourcesNarrowRailPanel is null)
+            return;
+
+        const double narrowRailPx = 56;
+
+        if (collapsed)
+        {
+            _sourcesColumnWidthRestore = AskSourcesColumn.Width;
+            AskSourcesColumn.MinWidth = narrowRailPx;
+            AskSourcesColumn.MaxWidth = narrowRailPx;
+            AskSourcesColumn.Width = new GridLength(narrowRailPx);
+            AskSplitterColumn.Width = new GridLength(0);
+            SourcesSplitter.Visibility = Visibility.Collapsed;
+            SourcesExpandedPanel.Visibility = Visibility.Collapsed;
+            SourcesNarrowRailPanel.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            AskSourcesColumn.MinWidth = 260;
+            AskSourcesColumn.MaxWidth = 960;
+            AskSourcesColumn.Width = _sourcesColumnWidthRestore ?? new GridLength(1, GridUnitType.Star);
+            AskSplitterColumn.Width = new GridLength(6);
+            SourcesSplitter.Visibility = Visibility.Visible;
+            SourcesExpandedPanel.Visibility = Visibility.Visible;
+            SourcesNarrowRailPanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void EnsureSourcesPanelVisible()
+    {
+        if (SourcesNarrowRailPanel is not null && SourcesNarrowRailPanel.Visibility == Visibility.Visible)
+            ApplySourcesPanelCollapsed(false);
     }
 
     private void MainNav_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -404,7 +472,8 @@ public partial class MainWindow : Window
             await MarkdownToHtml.NavigateMarkdownAsync(AnswerWebView, answerMd, "Answer").ConfigureAwait(true);
             var sourcesMd = PromptCoach.SourcesPanelMarkdown(passages);
             await MarkdownToHtml.NavigateMarkdownAsync(SourcesWebView, sourcesMd, "Sources").ConfigureAwait(true);
-            SourcesExpander.IsExpanded = passages.Count == 0;
+            if (passages.Count == 0)
+                EnsureSourcesPanelVisible();
         }
         catch (Exception ex)
         {
@@ -422,11 +491,27 @@ public partial class MainWindow : Window
                 // WebView2 unavailable — MessageBox already shown
             }
 
-            SourcesExpander.IsExpanded = true;
+            EnsureSourcesPanelVisible();
         }
         finally
         {
             AskBtn.IsEnabled = _rag.IsReady && !string.IsNullOrEmpty(ResolveApiKey());
         }
+    }
+
+    /// <summary>
+    /// Semantic version from the built assembly (from Knode.csproj &lt;Version&gt;); strips +commit suffix when present.
+    /// </summary>
+    private static string GetAppDisplayVersion()
+    {
+        var asm = Assembly.GetExecutingAssembly();
+        var info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrEmpty(info))
+        {
+            var plus = info.IndexOf('+');
+            return plus >= 0 ? info[..plus] : info;
+        }
+
+        return asm.GetName().Version?.ToString(3) ?? "";
     }
 }

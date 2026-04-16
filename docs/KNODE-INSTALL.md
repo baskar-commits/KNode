@@ -25,7 +25,7 @@
 
 ## Get the installer
 
-- **Recommended:** Download **`KnodeSetup-x.y.z.exe`** from the project’s **GitHub Releases** page (artifact built with [Inno Setup](https://jrsoftware.org/isinfo.php) via `dotnet/build-installer.ps1`).
+- **Recommended:** Open **[GitHub Releases](https://github.com/baskar-commits/KNode/releases)** for this repo, choose the **Latest** release, and download **`KnodeSetup-x.y.z.exe`** from **Assets** (the version in the filename matches the release tag). The artifact is built with [Inno Setup](https://jrsoftware.org/isinfo.php) via `dotnet/build-installer.ps1`).
 - **Trust:** Install only from **official** links you expect (maintainer’s repo or Release). This project does **not** ship through the Microsoft Store in the MVP.
 
 ---

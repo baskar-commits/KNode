@@ -43,7 +43,7 @@ if (-not $pipAudit) {
     if ($LASTEXITCODE -ne 0) { $exitCode = 1 }
 }
 
-Write-Host "`nDone. Review docs/SECURITY-AND-RELEASES.md (Dependency and release checks)." -ForegroundColor Green
+Write-Host "`nDone. Review docs/SECURITY-AND-RELEASES.md (Deeper checks / maintainer release story)." -ForegroundColor Green
 if ($exitCode -ne 0) {
     Write-Host "pip-audit reported issues (see above). Exit code 1." -ForegroundColor Yellow
 }

@@ -98,6 +98,12 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 - Commit with a message that states what shipped (features + version bump + doc changes if any).
 - `git push origin main`
 
+**Done when**
+
+- **`git push`** prints **no error** and usually ends with a line like **`main -> main`** (your local **`main`** advanced **`origin/main`** on GitHub).
+- After push: **`git fetch origin`** then **`git status`** shows **Your branch is up to date with `origin/main`** (and a **clean** tree if you have nothing left uncommitted).
+- **Optional double-check:** **`git rev-parse HEAD`** and **`git rev-parse origin/main`** print the **same** SHA — that is the commit GitHub’s **`main`** points at.
+
 **Never commit**
 
 - Real API keys, tokens, or private corpora (`corpus.jsonl`).
@@ -201,6 +207,18 @@ git commit -m "Release X.Y.Z: <short summary>"
 git push origin main
 ```
 
+**Verify GitHub has the same commit as your PC** (run after a successful push):
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+git fetch origin
+git status
+git rev-parse HEAD
+git rev-parse origin/main
+```
+
+The **two SHAs must match**. If **`git status`** says you are **ahead** of **`origin/main`**, the push did **not** complete (or you pushed a different remote/branch). If the web UI still looks old, hard-refresh the file on GitHub or confirm you opened **`main`** on the correct repo.
+
 <h3 id="appendix-a8-tag">A.8 Tag (after push)</h3>
 
 ```powershell
@@ -241,6 +259,8 @@ git add README.md docs/
 git commit -m "Docs: OneNote across install/first-run, hub, journey; SECURITY Phase 5 + A.9"
 git push origin main
 ```
+
+Then run the **same “Verify GitHub has the same commit”** block as under **[A.7](#appendix-a7-commit-push)** (`git fetch origin`, `git status`, matching **`HEAD`** and **`origin/main`**).
 
 Adjust paths if you only changed a subset; **`git add docs/`** is usual for doc waves that include **`docs/index.html`** and **`docs/DESIGN.html`**.
 

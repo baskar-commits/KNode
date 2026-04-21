@@ -8,6 +8,16 @@ public sealed class HighlightRecord
     [JsonPropertyName("id")]
     public string Id { get; set; } = "";
 
+    [JsonPropertyName("source")]
+    public string Source { get; set; } = "";
+
+    [JsonPropertyName("source_section_id")]
+    public string? SourceSectionId { get; set; }
+
+    /// <summary>Stable SHA-256 over <see cref="EmbedText"/> used for incremental re-embed decisions.</summary>
+    [JsonPropertyName("embed_content_hash")]
+    public string? EmbedContentHash { get; set; }
+
     [JsonPropertyName("book_title")]
     public string BookTitle { get; set; } = "";
 
@@ -31,7 +41,8 @@ public sealed class HighlightRecord
     {
         get
         {
-            var meta = $"{BookTitle}\n{Author}";
+            var src = string.IsNullOrWhiteSpace(Source) ? "kindle" : Source;
+            var meta = $"{BookTitle}\n{Author}\nSource: {src}";
             if (!string.IsNullOrWhiteSpace(LastAccessed))
                 meta += $"\nLast accessed: {LastAccessed}";
             return meta + $"\n{Text}" + (string.IsNullOrEmpty(Note) ? "" : $"\n[Your note: {Note}]");
@@ -42,7 +53,11 @@ public sealed class HighlightRecord
     {
         get
         {
-            var cite = $"{BookTitle} — {Author} (Location {Location})";
+            var source = string.IsNullOrWhiteSpace(Source) ? "kindle" : Source;
+            var locationLabel = source.Equals("onenote", StringComparison.OrdinalIgnoreCase) ? "Page" : "Location";
+            var cite = string.IsNullOrWhiteSpace(Location)
+                ? $"{BookTitle} — {Author}"
+                : $"{BookTitle} — {Author} ({locationLabel} {Location})";
             if (!string.IsNullOrWhiteSpace(LastAccessed))
                 cite += $" [accessed {LastAccessed}]";
             return cite;

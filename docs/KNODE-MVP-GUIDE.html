@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Knode: Grounded answers across your personal knowledge | Knode docs</title>
   <link rel="stylesheet" href="assets/docs-html.css" />
+
 </head>
 <body>
   <article class="doc">
@@ -12,12 +13,12 @@
     <h1>Knode: Grounded answers across your personal knowledge</h1>
 <p><strong>Canonical MVP guide.</strong></p>
 <p>Picture the highlights from books you have read on <strong>Kindle</strong>, the travel scraps your family keeps in <strong>OneNote</strong>, a photo of a menu you loved, or a voice memo after a hard day. <strong>Knode</strong> is built around a simple idea: ask in normal language, and get answers that <strong>pull from your own saves</strong> and <strong>point back to them</strong>, so themes connect across reading, notes, and plans instead of sitting in separate apps.</p>
-<p>The <strong>first version</strong> proves that on <strong>Windows</strong> with <strong>Kindle reading</strong> you export into a local <strong><code>corpus.jsonl</code></strong>, then index and <strong>Ask</strong> with sources, using <strong>Google Gemini</strong>. <strong>Down the road</strong>, the same pattern extends to more of <strong>your</strong> repositories and formats (notes, documents, <strong>images</strong>, <strong>audio</strong>, <strong>video</strong>, and transcripts), still grounded in what you chose to keep.</p>
+<p>The <strong>current version</strong> proves that on <strong>Windows</strong> you can ask over a local <strong>Kindle corpus</strong> (<code>corpus.jsonl</code>) and optional <strong>OneNote selected sections</strong>, then index and <strong>Ask</strong> with sources using <strong>Google Gemini</strong>. <strong>Down the road</strong>, the same pattern extends to more of <strong>your</strong> repositories and formats (documents, <strong>images</strong>, <strong>audio</strong>, <strong>video</strong>, and transcripts), still grounded in what you chose to keep.</p>
 <p><img alt="Knode Ask UI: question, coaching, answer, and collapsible sources" src="images/knode-ask-ui.png" /></p>
 <hr />
 <h2>1. Product: intent, personas, scenarios, requirements, success</h2>
 <h3>Elevator pitch</h3>
-<p><strong>Knode</strong> is a <strong>Windows desktop</strong> assistant that answers <strong>natural-language questions</strong> about <strong>your own Kindle reading</strong> using <strong>highlights and notes</strong> you ingested into a local <strong><code>corpus.jsonl</code></strong>. Answers are <strong>retrieval-grounded</strong>: the model sees <strong>your</strong> passages first, then synthesizes with <strong>citations</strong> (book, location, quote). The wedge is <strong>personal, citation-backed recall</strong>, not generic web chat.</p>
+<p><strong>Knode</strong> is a <strong>Windows desktop</strong> assistant that answers <strong>natural-language questions</strong> about your own sources: <strong>Kindle highlights/notes</strong> in local <strong><code>corpus.jsonl</code></strong> and optional <strong>OneNote sections</strong> you choose in Setup. Answers are <strong>retrieval-grounded</strong>: the model sees <strong>your</strong> passages first, then synthesizes with <strong>citations</strong> (book/section, location/page, quote). The wedge is <strong>personal, citation-backed recall</strong>, not generic web chat.</p>
 <p><strong>Repository policy:</strong> The <strong>GitHub repo ships source and docs only</strong>: <strong>no <code>corpus.jsonl</code></strong>, no sample highlights. <strong><code>**/corpus.jsonl</code></strong> is gitignored at repo root. After clone or install, <strong>every user</strong> produces or selects their own corpus (see <a href="#4-corpus-install-and-first-run">§4</a>).</p>
 <h3>Problem</h3>
 <p>Highlights in <a href="https://read.amazon.com/notebook">Kindle Notebook</a> are organized <strong>by book</strong>, but <strong>themes span books</strong>. Finding “what did I read about confidence?” across the library is slow; keyword search misses concepts. Users want <strong>their</strong> reading connected by topic <strong>without</strong> fabricated quotes.</p>
@@ -87,14 +88,19 @@
 <td><strong>Done</strong> (Knode: Gemini embeddings + cosine; Python path: Chroma + MiniLM).</td>
 </tr>
 <tr>
+<td>F2b</td>
+<td><strong>Optional OneNote source</strong> with section selection</td>
+<td><strong>Done</strong> (Graph sync in Setup; page-level records merged into local index).</td>
+</tr>
+<tr>
 <td>F3</td>
 <td><strong>Citation-first</strong> answers</td>
 <td><strong>Done</strong> (prompt + sources panel).</td>
 </tr>
 <tr>
 <td>F4</td>
-<td><strong>Local-first</strong> reading data; clear <strong>privacy</strong> story for corpus</td>
-<td><strong>Done</strong> (file + local index); see security doc for API traffic.</td>
+<td><strong>Local-first</strong> data; clear <strong>privacy</strong> story for corpus/connectors</td>
+<td><strong>Done</strong> (local index + OneNote local artifacts); see security doc for API traffic and local files.</td>
 </tr>
 <tr>
 <td>F5</td>
@@ -278,6 +284,10 @@
 </thead>
 <tbody>
 <tr>
+<td>2026-04-21</td>
+<td>Updated product framing from Kindle-only to Kindle + optional OneNote sections; added functional requirement row for OneNote source and privacy wording update.</td>
+</tr>
+<tr>
 <td>2026-04-09</td>
 <td>Story-style intro; §5 vision + public scenario themes; private <strong><code>*.local.md</code></strong> scenario notes + gitignore.</td>
 </tr>
@@ -296,5 +306,6 @@
 </tbody>
 </table>
   </article>
+
 </body>
 </html>

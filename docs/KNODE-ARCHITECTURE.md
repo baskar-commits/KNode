@@ -2,6 +2,13 @@
 
 **Audience:** software engineers and architects reviewing **Knode** (`dotnet/Knode`), its **vector retrieval** layer, and the optional **Python / Chroma** path. For product intent and personas, see [KNODE-MVP-GUIDE.md](KNODE-MVP-GUIDE.md).
 
+## Read this first (2-minute map)
+
+- **What ships now:** Local-first RAG desktop app over **Kindle `corpus.jsonl`** plus optional **OneNote selected sections**.
+- **Build index path:** ingest Kindle file + sync OneNote pages -> embed changed/new rows with Gemini -> persist local index.
+- **Ask path:** embed question -> local Top-K cosine retrieval -> `generateContent` over retrieved passages only.
+- **Go deeper:** [Tiered data-flow diagram](#tiered-data-flow-diagram-interactive-in-html), [Ask runtime sequence](#ask-runtime-sequence-interactive-in-html), [Component reference](#component-reference-what-each-piece-does).
+
 ---
 
 ## Agentic positioning vs what ships today
@@ -26,21 +33,133 @@ Both paths consume the **same** **`corpus.jsonl`** **contract** (one JSON per li
 ## System context (tiers and data flow)
 
 **0 — Ingestion (offline or dev)**  
-Kindle Notebook (web) → WebView2 spike capture → optional dedupe script → `parse_dump` (Python) → **`corpus.jsonl`**.
+Kindle Notebook (web) → WebView2 spike capture → optional dedupe script → `parse_dump` (Python) → **`corpus.jsonl`**.  
+Optional OneNote source: setup auth + selected sections → Graph page sync → local OneNote snapshot rows.
 
 **1 — Presentation (WPF)**  
 **Knode** `MainWindow`: **Ask**, **Setup**, **Help**; navigation and WebView-backed answer/sources.
 
 **2 — Application (C#)**  
-Orchestration: config, corpus hash, optional DPAPI for keys. **Build index:** read JSONL, batch embed via Gemini, load **`VectorIndex`**, persist via **`PersistentIndexStore`**. **Load index** from disk when corpus hash and model match manifest. **Ask:** embed question, apply **BookScope** / **YearScope**, **Top-K** cosine search, assemble RAG prompt, send **`generateContent`**, render answer and sources.
+Orchestration: config, corpus hash, optional DPAPI for keys. **Build index:** read JSONL + optional OneNote rows, reuse unchanged vectors by `id` + `embed_content_hash`, batch-embed changed/new rows via Gemini, load **`VectorIndex`**, persist via **`PersistentIndexStore`**. **Load index** from disk when corpus hash/signature and model match manifest. **Ask:** embed question, apply **BookScope** / **YearScope**, **Top-K** cosine search, assemble RAG prompt, send **`generateContent`**, render answer and sources.
 
 **3 — Local persistence**  
-Knode **`index/`** folder (`vectors.bin`, `manifest`, `records`); optional DPAPI key blob; `user_settings.json` for paths and UI prefs.
+Knode **`index/`** folder (`vectors.bin`, `manifest`, `records`); optional DPAPI key blob; `user_settings.json` for paths and UI prefs; OneNote local artifacts (`onenote_settings.json`, `onenote_records.json`, MSAL token cache file).
 
 **4 — External HTTPS**  
-Google Gemini embedding API and `generateContent` (configurable base URL).
+Google Gemini embedding API and `generateContent` (configurable base URL); Microsoft Graph OneNote APIs during section sync/build.
 
-Edges in short: **`corpus.jsonl`** feeds the UI and orchestrator; orchestrator builds or loads the index; index and query embeddings use Gemini; retrieved passages plus prompt go to Gemini chat; answers return to the UI.
+Edges in short: **`corpus.jsonl`** and selected OneNote pages feed the orchestrator; orchestrator builds or loads the index; embeddings and answer generation use Gemini; Graph is used during OneNote sync/build, not normal Ask retrieval.
+
+---
+
+## Tiered data-flow diagram (interactive in HTML)
+
+> On GitHub this appears as Mermaid source. In **`KNODE-ARCHITECTURE.html`** it renders as an interactive diagram.
+
+```mermaid
+flowchart TB
+  %% Tier 0: Ingestion
+  subgraph T0["Tier 0 — Ingestion (offline/dev and source connectors)"]
+    KNB["Kindle Notebook web"]
+    CAP["WebView spike capture"]
+    DEDUPE["dedupe_spike_extract.py (optional)"]
+    PARSE["parse_dump.py"]
+    CORPUS["corpus.jsonl (Kindle rows)"]
+    ONAUTH["OneNote auth (MSAL)"]
+    GRAPH["Microsoft Graph OneNote API"]
+    ONPAGES["Selected OneNote pages"]
+  end
+
+  %% Tier 1: Presentation
+  subgraph T1["Tier 1 — Presentation (WPF)"]
+    UI["MainWindow (Ask / Setup / Help)"]
+    PICKER["OneNote section picker"]
+    WEBVIEW["Answer + Sources WebView2"]
+  end
+
+  %% Tier 2: Application orchestration
+  subgraph T2["Tier 2 — Application (C# orchestration + RAG)"]
+    ORCH["BuildIndex_Click / Ask_Click"]
+    ONSYNC["BuildOneNoteRecordsAsync"]
+    RAG["KnodeRagService"]
+    SCOPE["BookScopeResolver + YearScopeResolver"]
+    SEARCH["VectorIndex.Search (cosine Top-K)"]
+    PROMPT["Prompt assembly from retrieved passages"]
+  end
+
+  %% Tier 3: Local persistence
+  subgraph T3["Tier 3 — Local persistence"]
+    INDEX["index/ (manifest.json, records.json, vectors.bin)"]
+    ONSET["onenote_settings.json (selected sections, sync state)"]
+    ONSNAP["onenote_records.json (OneNote snapshot rows)"]
+    USERSET["user_settings.json"]
+    DPAPI["DPAPI-protected key blob (optional)"]
+  end
+
+  %% Tier 4: External APIs
+  subgraph T4["Tier 4 — External HTTPS APIs"]
+    GEMEMB["Gemini embeddings API"]
+    GEMGEN["Gemini generateContent API"]
+  end
+
+  %% Build/indexing flow
+  KNB --> CAP --> DEDUPE --> PARSE --> CORPUS
+  UI --> PICKER --> ONAUTH --> GRAPH --> ONPAGES
+  UI --> ORCH
+  ORCH --> ONSYNC
+  CORPUS --> RAG
+  ONPAGES --> ONSYNC --> ONSNAP
+  ONSYNC --> RAG
+  ONSET --> ONSYNC
+  RAG --> GEMEMB
+  GEMEMB --> RAG
+  RAG --> INDEX
+  ORCH --> ONSET
+  ORCH --> USERSET
+  ORCH --> DPAPI
+
+  %% Ask/query flow (no Graph read in normal Ask path)
+  UI -->|"Ask question"| ORCH
+  ORCH --> RAG
+  RAG --> SCOPE
+  RAG --> SEARCH
+  INDEX --> SEARCH
+  SEARCH --> PROMPT
+  PROMPT --> GEMGEN
+  GEMGEN --> WEBVIEW
+
+  %% Incremental build notes
+  INDEX -.baseline rows/vectors.-> RAG
+  RAG -.reuse unchanged vectors by id + embed_content_hash.-> INDEX
+```
+
+---
+
+## Ask runtime sequence (interactive in HTML)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant W as MainWindow (WPF)
+  participant R as KnodeRagService
+  participant I as VectorIndex (local)
+  participant G as Gemini API
+  participant V as Answer/Sources WebView
+
+  U->>W: Enter question + click Ask
+  W->>R: AskAsync(question, topK)
+  R->>R: BookScope + YearScope filtering
+  R->>G: EmbedQuery(question)
+  G-->>R: Query vector
+  R->>I: Search(queryVector, topK, candidateIndices)
+  I-->>R: Top-K passages + scores
+  R->>R: Build prompt from retrieved passages only
+  R->>G: generateContent(system + question + passages)
+  G-->>R: Answer text
+  R-->>W: Answer + passages + retrieval banner
+  W->>V: Render Answer markdown + Sources markdown
+```
 
 ---
 
@@ -126,3 +245,5 @@ Use this to **compare** retrieval behavior or work **offline** from Google embed
 |------|--------|
 | 2026-04-07 | Expanded for engineers: Chroma vs Knode on-disk vector index, per-component tables, tiered system context, step-by-step Ask sequence, agentic product framing vs shipped RAG loop. |
 | 2026-04-09 | Replaced diagram-only sections with prose flow (public doc set). |
+| 2026-04-21 | Added tiered Mermaid architecture data-flow diagram and HTML Mermaid rendering support; updated flow to include OneNote section sync and incremental index reuse (`embed_content_hash`). |
+| 2026-04-21 | Added top-level 2-minute map and updated tier prose for OneNote source, incremental re-embed reuse, local OneNote artifacts, and Graph-vs-Ask boundary. |

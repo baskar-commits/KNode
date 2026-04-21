@@ -19,7 +19,9 @@ public static class SourcesMarkdown
             var authorPart = string.IsNullOrWhiteSpace(r.Author) || string.Equals(r.Author.Trim(), title, StringComparison.Ordinal)
                 ? ""
                 : $" — {r.Author.Trim()}";
-            var loc = string.IsNullOrWhiteSpace(r.Location) ? "" : $" · Loc. {r.Location.Trim()}";
+            var source = string.IsNullOrWhiteSpace(r.Source) ? "kindle" : r.Source.Trim().ToLowerInvariant();
+            var locLabel = source == "onenote" ? "Page" : "Loc.";
+            var loc = string.IsNullOrWhiteSpace(r.Location) ? "" : $" · {locLabel} {r.Location.Trim()}";
             var matchPct = Math.Clamp((int)Math.Round(Math.Max(0, Math.Min(1, p.Score)) * 100), 0, 100);
 
             var body = r.Text.Trim().Replace("\r\n", "\n");

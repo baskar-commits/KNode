@@ -14,30 +14,31 @@ public static class MarkdownToHtml
 
     private static readonly HtmlSanitizer Sanitizer = new();
 
-    public static string ToSafeHtmlDocument(string? markdown, string panelTitle)
+    /// <param name="answerTwoColumn">When true (Answer panel), body flows in two CSS columns to shorten vertical scroll.</param>
+    public static string ToSafeHtmlDocument(string? markdown, string panelTitle, bool answerTwoColumn = false)
     {
         var md = string.IsNullOrWhiteSpace(markdown) ? "" : markdown;
         var raw = Markdown.ToHtml(md, Pipeline);
         var safe = Sanitizer.Sanitize(raw);
-        return WrapDocument(panelTitle, safe);
+        return WrapDocument(panelTitle, safe, answerTwoColumn);
     }
 
-    public static async Task NavigateMarkdownAsync(WebView2 webView, string? markdown, string panelTitle)
+    public static async Task NavigateMarkdownAsync(WebView2 webView, string? markdown, string panelTitle, bool answerTwoColumn = false)
     {
         if (webView.CoreWebView2 is null)
             await webView.EnsureCoreWebView2Async().ConfigureAwait(true);
-        webView.NavigateToString(ToSafeHtmlDocument(markdown, panelTitle));
+        webView.NavigateToString(ToSafeHtmlDocument(markdown, panelTitle, answerTwoColumn));
     }
 
-    public static async Task NavigatePlaceholderAsync(WebView2 webView, string message, string panelTitle)
+    public static async Task NavigatePlaceholderAsync(WebView2 webView, string message, string panelTitle, bool answerTwoColumn = false)
     {
-        var html = WrapDocument(panelTitle, $"""<p class="muted">{System.Net.WebUtility.HtmlEncode(message)}</p>""");
+        var html = WrapDocument(panelTitle, $"""<p class="muted">{System.Net.WebUtility.HtmlEncode(message)}</p>""", answerTwoColumn);
         if (webView.CoreWebView2 is null)
             await webView.EnsureCoreWebView2Async().ConfigureAwait(true);
         webView.NavigateToString(html);
     }
 
-    private static string WrapDocument(string panelTitle, string bodyInnerHtml)
+    private static string WrapDocument(string panelTitle, string bodyInnerHtml, bool answerTwoColumn = false)
     {
         var title = System.Net.WebUtility.HtmlEncode(panelTitle);
         var sb = new StringBuilder(2048);
@@ -47,6 +48,12 @@ public static class MarkdownToHtml
             :root { color-scheme: light; }
             body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.55; color: #1e293b; margin: 0; padding: 14px 18px; background: #fcfcfd; }
             article { max-width: 52rem; }
+            article.answer-columns { max-width: none; column-count: 2; column-gap: 1.75rem; column-fill: balance; }
+            article.answer-columns h1 { column-span: all; }
+            article.answer-columns pre,
+            article.answer-columns table,
+            article.answer-columns blockquote { column-span: all; break-inside: avoid; }
+            article.answer-columns li { break-inside: avoid; }
             h1 { font-size: 1.35rem; margin: 0 0 0.75rem; color: #0f172a; font-weight: 600; }
             h2 { font-size: 1.12rem; margin: 1.1rem 0 0.5rem; color: #0f172a; font-weight: 600; }
             h3 { font-size: 1.05rem; margin: 1rem 0 0.45rem; color: #334155; font-weight: 600; }
@@ -62,7 +69,10 @@ public static class MarkdownToHtml
             .muted { color: #94a3b8; }
             hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.2rem 0; }
             """);
-        sb.Append("</style></head><body><article>");
+        sb.Append("</style></head><body><article");
+        if (answerTwoColumn)
+            sb.Append(" class=\"answer-columns\"");
+        sb.Append('>');
         sb.Append(bodyInnerHtml);
         sb.Append("</article></body></html>");
         return sb.ToString();

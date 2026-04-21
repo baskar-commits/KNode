@@ -1,8 +1,16 @@
 using System.IO;
 using System.Linq;
-using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Knode.Services;
+
+public sealed record BuildIndexStats(
+    int TotalRows,
+    int EmbeddedRows,
+    int ReusedRows,
+    int DeletedRowsFromBaseline,
+    bool LoadedFromExactCache);
 
 /// <summary>Loads corpus.jsonl, builds Gemini embedding index, answers via generateContent.</summary>
 public sealed class KnodeRagService
@@ -25,8 +33,23 @@ public sealed class KnodeRagService
 
     public int RecordCount => _records.Count;
 
+    private static string BuildCacheSignature(string corpusSha, string? extraSignature) =>
+        string.IsNullOrWhiteSpace(extraSignature) ? corpusSha : $"{corpusSha}|{extraSignature.Trim()}";
+
+    private static string ComputeEmbedContentHash(HighlightRecord record)
+    {
+        var payload = record.EmbedText;
+        var bytes = Encoding.UTF8.GetBytes(payload);
+        using var sha = SHA256.Create();
+        return Convert.ToHexString(sha.ComputeHash(bytes));
+    }
+
     /// <summary>Loads index from disk when corpus hash and embedding model match.</summary>
-    public async Task<bool> TryLoadPersistedIndexAsync(string corpusPath, IProgress<string>? progress, CancellationToken ct = default)
+    public async Task<bool> TryLoadPersistedIndexAsync(
+        string corpusPath,
+        IProgress<string>? progress,
+        string? extraCacheSignature = null,
+        CancellationToken ct = default)
     {
         _ready = false;
         var path = Path.GetFullPath(corpusPath);
@@ -35,7 +58,8 @@ public sealed class KnodeRagService
 
         progress?.Report("Checking saved index…");
         var shaHex = await PersistentIndexStore.ComputeCorpusSha256HexAsync(path, ct).ConfigureAwait(false);
-        if (!PersistentIndexStore.TryLoad(_embeddingModel, shaHex, out var recs, out var vecs, out var loadMsg) ||
+        var cacheSignature = BuildCacheSignature(shaHex, extraCacheSignature);
+        if (!PersistentIndexStore.TryLoad(_embeddingModel, cacheSignature, out var recs, out var vecs, out var loadMsg) ||
             recs is null || vecs is null)
         {
             if (!string.IsNullOrEmpty(loadMsg))
@@ -54,12 +78,14 @@ public sealed class KnodeRagService
     /// Pause between each embedding batch. Free tier is ~100 embed requests/minute; with batch size 32, ~18–20s stays under the cap.
     /// Set 0 if your project has higher quota.
     /// </param>
-    public async Task BuildIndexAsync(
+    public async Task<BuildIndexStats> BuildIndexAsync(
         GeminiClient client,
         string corpusPath,
         IProgress<string>? progress,
         int delayBetweenEmbeddingBatchesMs = 18500,
         bool forceFullRebuild = false,
+        IReadOnlyList<HighlightRecord>? additionalRecords = null,
+        string? extraCacheSignature = null,
         CancellationToken ct = default)
     {
         _ready = false;
@@ -69,8 +95,9 @@ public sealed class KnodeRagService
 
         progress?.Report("Checking saved index…");
         var corpusSha = await PersistentIndexStore.ComputeCorpusSha256HexAsync(path, ct).ConfigureAwait(false);
+        var cacheSignature = BuildCacheSignature(corpusSha, extraCacheSignature);
         if (!forceFullRebuild &&
-            PersistentIndexStore.TryLoad(_embeddingModel, corpusSha, out var cachedRecords, out var cachedVectors, out _) &&
+            PersistentIndexStore.TryLoad(_embeddingModel, cacheSignature, out var cachedRecords, out var cachedVectors, out _) &&
             cachedRecords is not null && cachedVectors is not null)
         {
             _records = cachedRecords;
@@ -79,7 +106,12 @@ public sealed class KnodeRagService
             progress?.Report(
                 $"Ready — loaded saved index ({_records.Count} highlights). No Gemini calls. " +
                 "Check “Force full re-embed” and click Build index again if you need a fresh embedding pass.");
-            return;
+            return new BuildIndexStats(
+                TotalRows: _records.Count,
+                EmbeddedRows: 0,
+                ReusedRows: _records.Count,
+                DeletedRowsFromBaseline: 0,
+                LoadedFromExactCache: true);
         }
 
         if (forceFullRebuild)
@@ -96,22 +128,106 @@ public sealed class KnodeRagService
                 _records.Add(r);
         }
 
+        if (additionalRecords is not null && additionalRecords.Count > 0)
+        {
+            var nonEmpty = additionalRecords.Where(static r => !string.IsNullOrWhiteSpace(r.Text));
+            _records.AddRange(nonEmpty);
+        }
+
         if (_records.Count == 0)
             throw new InvalidOperationException("No highlights in corpus.");
 
+        // Keep first occurrence for duplicate non-empty ids so unchanged rows can reuse prior vectors deterministically.
+        var deduped = new List<HighlightRecord>(_records.Count);
+        var seenIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var rec in _records)
+        {
+            var id = rec.Id.Trim();
+            if (id.Length == 0)
+            {
+                deduped.Add(rec);
+                continue;
+            }
+
+            if (seenIds.Add(id))
+                deduped.Add(rec);
+        }
+
+        _records = deduped;
+        var currentIds = _records
+            .Select(static r => r.Id.Trim())
+            .Where(static id => id.Length > 0)
+            .ToHashSet(StringComparer.Ordinal);
+
+        Dictionary<string, (HighlightRecord Record, float[] Vector)> baselineById = new(StringComparer.Ordinal);
+        string? baselineMessage = null;
+        if (!forceFullRebuild &&
+            PersistentIndexStore.TryLoadLatestForModel(_embeddingModel, out var baselineRecords, out var baselineVectors, out baselineMessage) &&
+            baselineRecords is not null && baselineVectors is not null)
+        {
+            for (var i = 0; i < baselineRecords.Count; i++)
+            {
+                var id = baselineRecords[i].Id.Trim();
+                if (id.Length == 0 || baselineById.ContainsKey(id))
+                    continue;
+                baselineById[id] = (baselineRecords[i], baselineVectors[i]);
+            }
+            progress?.Report($"Incremental baseline loaded ({baselineById.Count} prior row ids).");
+        }
+        else if (!string.IsNullOrWhiteSpace(baselineMessage))
+        {
+            progress?.Report($"No incremental baseline: {baselineMessage}");
+        }
+        var deletedRowsFromBaseline = baselineById.Keys.Count(k => !currentIds.Contains(k));
+
         const int batchSize = 32;
         var allVectors = new float[_records.Count][];
-        var batches = (_records.Count + batchSize - 1) / batchSize;
+        var toEmbedIndices = new List<int>(_records.Count);
+        var toEmbedTexts = new List<string>(_records.Count);
+        var reusedCount = 0;
+
+        for (var i = 0; i < _records.Count; i++)
+        {
+            var rec = _records[i];
+            var newHash = ComputeEmbedContentHash(rec);
+            rec.EmbedContentHash = newHash;
+
+            var id = rec.Id.Trim();
+            if (id.Length > 0 && baselineById.TryGetValue(id, out var baseline))
+            {
+                var baselineHash = string.IsNullOrWhiteSpace(baseline.Record.EmbedContentHash)
+                    ? ComputeEmbedContentHash(baseline.Record)
+                    : baseline.Record.EmbedContentHash!.Trim();
+
+                if (string.Equals(baselineHash, newHash, StringComparison.OrdinalIgnoreCase))
+                {
+                    allVectors[i] = baseline.Vector;
+                    reusedCount++;
+                    continue;
+                }
+            }
+
+            toEmbedIndices.Add(i);
+            toEmbedTexts.Add(rec.EmbedText);
+        }
+
+        var embedCount = toEmbedIndices.Count;
+        if (embedCount == 0)
+        {
+            progress?.Report($"No text changes detected. Reused vectors for all {_records.Count} rows.");
+        }
+
+        var batches = (embedCount + batchSize - 1) / batchSize;
         for (var b = 0; b < batches; b++)
         {
             ct.ThrowIfCancellationRequested();
             var start = b * batchSize;
-            var take = Math.Min(batchSize, _records.Count - start);
-            var chunk = _records.Skip(start).Take(take).Select(x => x.EmbedText).ToArray();
-            progress?.Report($"Gemini embedding batch {b + 1}/{batches} ({take} items)…");
+            var take = Math.Min(batchSize, embedCount - start);
+            var chunk = toEmbedTexts.Skip(start).Take(take).ToArray();
+            progress?.Report($"Gemini embedding batch {b + 1}/{batches} ({take} changed/new items; reused {reusedCount})…");
             var emb = await client.BatchEmbedDocumentsAsync(_embeddingModel, chunk, ct).ConfigureAwait(false);
             for (var i = 0; i < emb.Length; i++)
-                allVectors[start + i] = emb[i];
+                allVectors[toEmbedIndices[start + i]] = emb[i];
 
             if (b < batches - 1 && delayBetweenEmbeddingBatchesMs > 0)
             {
@@ -121,11 +237,20 @@ public sealed class KnodeRagService
             }
         }
 
+        if (allVectors.Any(static v => v is null))
+            throw new InvalidOperationException("Incremental build produced missing vectors.");
+
         _index.Load(allVectors, _records);
         _ready = true;
         progress?.Report("Saving index to disk…");
-        await PersistentIndexStore.SaveAsync(path, _embeddingModel, corpusSha, _records, allVectors, ct).ConfigureAwait(false);
-        progress?.Report($"Index ready ({_records.Count} highlights).");
+        await PersistentIndexStore.SaveAsync(path, _embeddingModel, cacheSignature, _records, allVectors, ct).ConfigureAwait(false);
+        progress?.Report($"Index ready ({_records.Count} highlights; embedded {embedCount}, reused {reusedCount}).");
+        return new BuildIndexStats(
+            TotalRows: _records.Count,
+            EmbeddedRows: embedCount,
+            ReusedRows: reusedCount,
+            DeletedRowsFromBaseline: deletedRowsFromBaseline,
+            LoadedFromExactCache: false);
     }
 
     public async Task<(string Answer, IReadOnlyList<(HighlightRecord Record, float Score)> Passages, string RetrievalBanner)> AskAsync(
@@ -136,6 +261,8 @@ public sealed class KnodeRagService
     {
         if (!_ready || _records.Count == 0)
             throw new InvalidOperationException("Index not built.");
+
+        ct.ThrowIfCancellationRequested();
 
         var scope = BookScopeResult.Resolve(
             question,
@@ -212,6 +339,8 @@ public sealed class KnodeRagService
 
         var ctx = string.Join("\n\n", passages.Select((p, i) =>
             $"[{i + 1}] {p.Record.CitationLine}\n{p.Record.Text}"));
+
+        ct.ThrowIfCancellationRequested();
 
         var answer = await client.GenerateContentAsync(
             _chatModel,

@@ -125,6 +125,73 @@ public static class PersistentIndexStore
         }
     }
 
+    /// <summary>
+    /// Loads the latest saved index for the embedding model, ignoring corpus hash/signature mismatch.
+    /// Useful as a baseline for incremental re-embed decisions.
+    /// </summary>
+    public static bool TryLoadLatestForModel(
+        string embeddingModel,
+        [NotNullWhen(true)] out List<HighlightRecord>? records,
+        out float[][]? vectors,
+        out string? message)
+    {
+        records = null;
+        vectors = null;
+        message = null;
+
+        if (!File.Exists(ManifestPath) || !File.Exists(RecordsPath) || !File.Exists(VectorsPath))
+        {
+            message = "No saved index baseline found.";
+            return false;
+        }
+
+        try
+        {
+            var manifest = JsonSerializer.Deserialize<IndexManifest>(File.ReadAllText(ManifestPath), ManifestJson);
+            if (manifest is null || manifest.FormatVersion != 1)
+            {
+                message = "Saved index format not recognized.";
+                return false;
+            }
+
+            if (!ModelMatches(manifest.EmbeddingModel, embeddingModel))
+            {
+                message = "Saved index baseline uses a different embedding model.";
+                return false;
+            }
+
+            var rawRecords = File.ReadAllText(RecordsPath);
+            var prepared = HighlightRecordJson.PrepareJsonText(rawRecords);
+            records = HighlightRecordJson.DeserializeRecordsArray(prepared)
+                ?? JsonSerializer.Deserialize<List<HighlightRecord>>(prepared, RecordsJson);
+            if (records is null || records.Count == 0)
+            {
+                message = "Saved index baseline has no records.";
+                return false;
+            }
+
+            vectors = ReadVectors(VectorsPath, manifest.RecordCount, manifest.Dimensions);
+            if (vectors is null)
+            {
+                message = "Saved index baseline vectors are invalid.";
+                return false;
+            }
+
+            if (vectors.Length != records.Count)
+            {
+                message = "Saved index baseline records/vectors count mismatch.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            message = $"Could not load saved index baseline: {ex.Message}";
+            return false;
+        }
+    }
+
     public static async Task SaveAsync(
         string corpusFullPath,
         string embeddingModel,

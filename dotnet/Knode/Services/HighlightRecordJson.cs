@@ -118,6 +118,15 @@ public static class HighlightRecordJson
 
     private static void CoalesceFromObject(JsonObject obj, HighlightRecord r)
     {
+        if (string.IsNullOrWhiteSpace(r.Source))
+            r.Source = FirstString(obj, "source", "Source") ?? "";
+
+        if (string.IsNullOrWhiteSpace(r.SourceSectionId))
+            r.SourceSectionId = FirstString(obj, "source_section_id", "sourceSectionId", "SourceSectionId");
+
+        if (string.IsNullOrWhiteSpace(r.EmbedContentHash))
+            r.EmbedContentHash = FirstString(obj, "embed_content_hash", "embedContentHash", "EmbedContentHash");
+
         if (string.IsNullOrWhiteSpace(r.BookTitle))
             r.BookTitle = FirstString(obj, "book_title", "BookTitle", "bookTitle", "title", "Title", "book_name", "BookName") ?? "";
 
@@ -205,6 +214,9 @@ public static class HighlightRecordJson
     private static void Normalize(HighlightRecord r)
     {
         r.Id ??= "";
+        r.Source ??= "";
+        r.SourceSectionId ??= "";
+        r.EmbedContentHash ??= "";
         r.BookTitle ??= "";
         r.Author ??= "";
         r.Location ??= "";

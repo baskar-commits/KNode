@@ -42,6 +42,14 @@ public static class PromptCoach
         + "otherwise try asking again.\n\n"
         + NextStepsCoachingMd();
 
+    public static string AskCancelledAnswerMd() =>
+        "_Ask was cancelled._ You can edit your question and try again.\n";
+
+    public static string AskCancelledSourcesMd() =>
+        "### Ask cancelled\n\n"
+        + "The in-flight request was stopped (for example during embedding or while waiting for Gemini). "
+        + "Nothing is wrong with your index — click **Ask** again when you are ready.\n";
+
     public static string AskFailedUserMessage(string technicalMessage) =>
         $"{technicalMessage}\n\n"
         + "**If this persists:** check your network, Gemini quota, and that **Build index** completed successfully. "

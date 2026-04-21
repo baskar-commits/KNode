@@ -5,12 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Knode architecture: detailed design | Knode docs</title>
   <link rel="stylesheet" href="assets/docs-html.css" />
+
+  <style>
+    .mermaid {
+      margin: 1.2rem 0;
+      padding: 0.75rem 0.25rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+  </style>
+
 </head>
 <body>
   <article class="doc">
     <a class="back" href="index.html">← Documentation hub</a>
     <h1>Knode architecture: detailed design</h1>
 <p><strong>Audience:</strong> software engineers and architects reviewing <strong>Knode</strong> (<code>dotnet/Knode</code>), its <strong>vector retrieval</strong> layer, and the optional <strong>Python / Chroma</strong> path. For product intent and personas, see <a href="KNODE-MVP-GUIDE.html">KNODE-MVP-GUIDE.md</a>.</p>
+<h2>Read this first (2-minute map)</h2>
+<ul>
+<li><strong>What ships now:</strong> Local-first RAG desktop app over <strong>Kindle <code>corpus.jsonl</code></strong> plus optional <strong>OneNote selected sections</strong>.</li>
+<li><strong>Build index path:</strong> ingest Kindle file + sync OneNote pages -&gt; embed changed/new rows with Gemini -&gt; persist local index.</li>
+<li><strong>Ask path:</strong> embed question -&gt; local Top-K cosine retrieval -&gt; <code>generateContent</code> over retrieved passages only.</li>
+<li><strong>Go deeper:</strong> <a href="#tiered-data-flow-diagram-interactive-in-html">Tiered data-flow diagram</a>, <a href="#ask-runtime-sequence-interactive-in-html">Ask runtime sequence</a>, <a href="#component-reference-what-each-piece-does">Component reference</a>.</li>
+</ul>
 <hr />
 <h2>Agentic positioning vs what ships today</h2>
 <p><strong>Knode</strong> is marketed as an <strong>agentic AI</strong> application: a companion that <strong>grounds</strong> reasoning in <strong>your</strong> reading, <strong>selects</strong> relevant evidence, and <strong>acts</strong> through <strong>transparent</strong> outputs (citations, scoped retrieval, optional sources panel). The <strong>roadmap</strong> points to richer <strong>agentic</strong> behavior: <strong>multi-step</strong> planning, <strong>tool</strong> use (refresh corpus, validate export), and <strong>longer</strong> sessions, still anchored in the private <strong><code>corpus.jsonl</code></strong> contract.</p>
@@ -45,16 +64,123 @@
 <hr />
 <h2>System context (tiers and data flow)</h2>
 <p><strong>0 — Ingestion (offline or dev)</strong><br />
-Kindle Notebook (web) → WebView2 spike capture → optional dedupe script → <code>parse_dump</code> (Python) → <strong><code>corpus.jsonl</code></strong>.</p>
+Kindle Notebook (web) → WebView2 spike capture → optional dedupe script → <code>parse_dump</code> (Python) → <strong><code>corpus.jsonl</code></strong>.<br />
+Optional OneNote source: setup auth + selected sections → Graph page sync → local OneNote snapshot rows.</p>
 <p><strong>1 — Presentation (WPF)</strong><br />
 <strong>Knode</strong> <code>MainWindow</code>: <strong>Ask</strong>, <strong>Setup</strong>, <strong>Help</strong>; navigation and WebView-backed answer/sources.</p>
 <p><strong>2 — Application (C#)</strong><br />
-Orchestration: config, corpus hash, optional DPAPI for keys. <strong>Build index:</strong> read JSONL, batch embed via Gemini, load <strong><code>VectorIndex</code></strong>, persist via <strong><code>PersistentIndexStore</code></strong>. <strong>Load index</strong> from disk when corpus hash and model match manifest. <strong>Ask:</strong> embed question, apply <strong>BookScope</strong> / <strong>YearScope</strong>, <strong>Top-K</strong> cosine search, assemble RAG prompt, send <strong><code>generateContent</code></strong>, render answer and sources.</p>
+Orchestration: config, corpus hash, optional DPAPI for keys. <strong>Build index:</strong> read JSONL + optional OneNote rows, reuse unchanged vectors by <code>id</code> + <code>embed_content_hash</code>, batch-embed changed/new rows via Gemini, load <strong><code>VectorIndex</code></strong>, persist via <strong><code>PersistentIndexStore</code></strong>. <strong>Load index</strong> from disk when corpus hash/signature and model match manifest. <strong>Ask:</strong> embed question, apply <strong>BookScope</strong> / <strong>YearScope</strong>, <strong>Top-K</strong> cosine search, assemble RAG prompt, send <strong><code>generateContent</code></strong>, render answer and sources.</p>
 <p><strong>3 — Local persistence</strong><br />
-Knode <strong><code>index/</code></strong> folder (<code>vectors.bin</code>, <code>manifest</code>, <code>records</code>); optional DPAPI key blob; <code>user_settings.json</code> for paths and UI prefs.</p>
+Knode <strong><code>index/</code></strong> folder (<code>vectors.bin</code>, <code>manifest</code>, <code>records</code>); optional DPAPI key blob; <code>user_settings.json</code> for paths and UI prefs; OneNote local artifacts (<code>onenote_settings.json</code>, <code>onenote_records.json</code>, MSAL token cache file).</p>
 <p><strong>4 — External HTTPS</strong><br />
-Google Gemini embedding API and <code>generateContent</code> (configurable base URL).</p>
-<p>Edges in short: <strong><code>corpus.jsonl</code></strong> feeds the UI and orchestrator; orchestrator builds or loads the index; index and query embeddings use Gemini; retrieved passages plus prompt go to Gemini chat; answers return to the UI.</p>
+Google Gemini embedding API and <code>generateContent</code> (configurable base URL); Microsoft Graph OneNote APIs during section sync/build.</p>
+<p>Edges in short: <strong><code>corpus.jsonl</code></strong> and selected OneNote pages feed the orchestrator; orchestrator builds or loads the index; embeddings and answer generation use Gemini; Graph is used during OneNote sync/build, not normal Ask retrieval.</p>
+<hr />
+<h2>Tiered data-flow diagram (interactive in HTML)</h2>
+<blockquote>
+<p>On GitHub this appears as Mermaid source. In <strong><code>KNODE-ARCHITECTURE.html</code></strong> it renders as an interactive diagram.</p>
+</blockquote>
+<div class="mermaid">
+flowchart TB
+  %% Tier 0: Ingestion
+  subgraph T0["Tier 0 — Ingestion (offline/dev and source connectors)"]
+    KNB["Kindle Notebook web"]
+    CAP["WebView spike capture"]
+    DEDUPE["dedupe_spike_extract.py (optional)"]
+    PARSE["parse_dump.py"]
+    CORPUS["corpus.jsonl (Kindle rows)"]
+    ONAUTH["OneNote auth (MSAL)"]
+    GRAPH["Microsoft Graph OneNote API"]
+    ONPAGES["Selected OneNote pages"]
+  end
+
+  %% Tier 1: Presentation
+  subgraph T1["Tier 1 — Presentation (WPF)"]
+    UI["MainWindow (Ask / Setup / Help)"]
+    PICKER["OneNote section picker"]
+    WEBVIEW["Answer + Sources WebView2"]
+  end
+
+  %% Tier 2: Application orchestration
+  subgraph T2["Tier 2 — Application (C# orchestration + RAG)"]
+    ORCH["BuildIndex_Click / Ask_Click"]
+    ONSYNC["BuildOneNoteRecordsAsync"]
+    RAG["KnodeRagService"]
+    SCOPE["BookScopeResolver + YearScopeResolver"]
+    SEARCH["VectorIndex.Search (cosine Top-K)"]
+    PROMPT["Prompt assembly from retrieved passages"]
+  end
+
+  %% Tier 3: Local persistence
+  subgraph T3["Tier 3 — Local persistence"]
+    INDEX["index/ (manifest.json, records.json, vectors.bin)"]
+    ONSET["onenote_settings.json (selected sections, sync state)"]
+    ONSNAP["onenote_records.json (OneNote snapshot rows)"]
+    USERSET["user_settings.json"]
+    DPAPI["DPAPI-protected key blob (optional)"]
+  end
+
+  %% Tier 4: External APIs
+  subgraph T4["Tier 4 — External HTTPS APIs"]
+    GEMEMB["Gemini embeddings API"]
+    GEMGEN["Gemini generateContent API"]
+  end
+
+  %% Build/indexing flow
+  KNB --> CAP --> DEDUPE --> PARSE --> CORPUS
+  UI --> PICKER --> ONAUTH --> GRAPH --> ONPAGES
+  UI --> ORCH
+  ORCH --> ONSYNC
+  CORPUS --> RAG
+  ONPAGES --> ONSYNC --> ONSNAP
+  ONSYNC --> RAG
+  ONSET --> ONSYNC
+  RAG --> GEMEMB
+  GEMEMB --> RAG
+  RAG --> INDEX
+  ORCH --> ONSET
+  ORCH --> USERSET
+  ORCH --> DPAPI
+
+  %% Ask/query flow (no Graph read in normal Ask path)
+  UI -->|"Ask question"| ORCH
+  ORCH --> RAG
+  RAG --> SCOPE
+  RAG --> SEARCH
+  INDEX --> SEARCH
+  SEARCH --> PROMPT
+  PROMPT --> GEMGEN
+  GEMGEN --> WEBVIEW
+
+  %% Incremental build notes
+  INDEX -.baseline rows/vectors.-> RAG
+  RAG -.reuse unchanged vectors by id + embed_content_hash.-> INDEX
+</div>
+<hr />
+<h2>Ask runtime sequence (interactive in HTML)</h2>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant W as MainWindow (WPF)
+  participant R as KnodeRagService
+  participant I as VectorIndex (local)
+  participant G as Gemini API
+  participant V as Answer/Sources WebView
+
+  U->>W: Enter question + click Ask
+  W->>R: AskAsync(question, topK)
+  R->>R: BookScope + YearScope filtering
+  R->>G: EmbedQuery(question)
+  G-->>R: Query vector
+  R->>I: Search(queryVector, topK, candidateIndices)
+  I-->>R: Top-K passages + scores
+  R->>R: Build prompt from retrieved passages only
+  R->>G: generateContent(system + question + passages)
+  G-->>R: Answer text
+  R-->>W: Answer + passages + retrieval banner
+  W->>V: Render Answer markdown + Sources markdown
+</div>
 <hr />
 <h2>Component reference (what each piece does)</h2>
 <h3>Ingestion chain (outside the EXE)</h3>
@@ -246,8 +372,27 @@ Google Gemini embedding API and <code>generateContent</code> (configurable base 
 <td>2026-04-09</td>
 <td>Replaced diagram-only sections with prose flow (public doc set).</td>
 </tr>
+<tr>
+<td>2026-04-21</td>
+<td>Added tiered Mermaid architecture data-flow diagram and HTML Mermaid rendering support; updated flow to include OneNote section sync and incremental index reuse (<code>embed_content_hash</code>).</td>
+</tr>
+<tr>
+<td>2026-04-21</td>
+<td>Added top-level 2-minute map and updated tier prose for OneNote source, incremental re-embed reuse, local OneNote artifacts, and Graph-vs-Ask boundary.</td>
+</tr>
 </tbody>
 </table>
   </article>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "loose",
+      theme: "neutral",
+      flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" }
+    });
+  </script>
+
 </body>
 </html>

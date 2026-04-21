@@ -7,7 +7,9 @@
         Height="860" Width="1020"
         MinHeight="640" MinWidth="720"
         Background="#EFF0F4"
-        Loaded="MainWindow_Loaded">
+        Loaded="MainWindow_Loaded"
+        Closing="MainWindow_Closing"
+        Closed="MainWindow_Closed">
     <Window.Resources>
         <Style x:Key="NavListBox" TargetType="ListBox">
             <Setter Property="Background" Value="Transparent"/>
@@ -146,8 +148,9 @@
                                                     Click="SampleQuestionChip_Click" Content="Connect two topics"/>
                                         </WrapPanel>
                                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                            <Button x:Name="AskBtn" Content="Ask" Style="{StaticResource PrimaryButton}" MinWidth="96"
-                                                    IsEnabled="False" Click="Ask_Click"/>
+                                            <Button x:Name="AskBtn" Content="Ask" Style="{StaticResource PrimaryButton}" MinWidth="100"
+                                                    IsEnabled="False" Click="Ask_Click"
+                                                    ToolTip="Ask your library. While a request runs, this becomes Cancel."/>
                                             <Button Content="Open Setup…" Style="{StaticResource SecondaryButton}" Margin="12,0,0,0" Padding="12,9" Click="GoSetup_Click"/>
                                         </StackPanel>
                                     </StackPanel>
@@ -287,6 +290,7 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="148"/>
@@ -298,14 +302,26 @@
                                     <TextBox x:Name="CorpusPathBox" Grid.Row="0" Grid.Column="1" Style="{StaticResource ModernTextBox}" Margin="0,0,10,8" VerticalContentAlignment="Center"/>
                                     <Button Grid.Row="0" Grid.Column="2" Content="Browse…" Style="{StaticResource SecondaryButton}" VerticalAlignment="Top" Click="BrowseCorpus_Click"/>
 
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="AI agent API key" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#374151" Margin="0,4,0,4"/>
-                                    <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="OneNote source" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,8,0,4"/>
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                                        <CheckBox x:Name="EnableOneNoteCheck" Content="Include OneNote pages in the index" FontSize="12.5" Foreground="#334155"
+                                                  Checked="EnableOneNoteCheck_Changed" Unchecked="EnableOneNoteCheck_Changed"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <Button x:Name="ConnectOneNoteBtn" Content="Connect OneNote…" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="ConnectOneNote_Click"/>
+                                            <Button x:Name="SelectOneNoteSectionsBtn" Content="Select sections…" Style="{StaticResource SecondaryButton}" Padding="10,6" Margin="10,0,0,0" Click="SelectOneNoteSections_Click"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="OneNoteStatusText" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="11.5" Foreground="#64748B"
+                                                   Text="Not connected. OneNote is optional."/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="AI agent API key" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#374151" Margin="0,4,0,4"/>
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2">
                                         <PasswordBox x:Name="ApiKeyBox" Style="{StaticResource ModernPasswordBox}" Margin="0,0,0,6"/>
                                         <TextBlock TextWrapping="Wrap" FontSize="11.5" Foreground="#64748B" Margin="0,0,0,6"
                                                    Text="This MVP uses Google Gemini (Google AI Studio). Leave empty if you already saved a key."/>
                                     </StackPanel>
 
-                                    <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0">
+                                    <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0">
                                         <CheckBox x:Name="RememberApiKeyCheck" FontSize="12.5" Foreground="#334155"
                                                   Content="Remember API key on this PC (Windows DPAPI, current user)" IsChecked="True"/>
                                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -316,15 +332,16 @@
                                         </StackPanel>
                                     </StackPanel>
 
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Models" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,12,0,4"/>
-                                    <TextBlock x:Name="ModelsInfo" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,6"
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Models" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,12,0,4"/>
+                                    <TextBlock x:Name="ModelsInfo" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,6"
                                                TextWrapping="Wrap" Foreground="#64748B" FontSize="12"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="App version" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,6,0,4"/>
-                                    <TextBlock x:Name="BuildInfoText" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0"
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="App version" VerticalAlignment="Top" FontWeight="SemiBold" Foreground="#374151" Margin="0,6,0,4"/>
+                                    <TextBlock x:Name="BuildInfoText" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0"
                                                TextWrapping="Wrap" FontSize="11" Foreground="#94A3B8"/>
 
-                                    <Grid Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
+                                    <Grid Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
                                         <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
@@ -334,6 +351,9 @@
                                             <Button x:Name="BuildIndexBtn" Content="Build index" Style="{StaticResource PrimaryButton}" MinWidth="128" Click="BuildIndex_Click"/>
                                             <TextBlock x:Name="IndexStatus" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#64748B" FontSize="12.5" TextWrapping="Wrap"/>
                                         </StackPanel>
+                                        <TextBlock x:Name="LastBuildSummaryText" Grid.Row="2" Margin="0,8,0,0" TextWrapping="Wrap"
+                                                   FontSize="11.5" Foreground="#475569"
+                                                   Text="Last build summary appears here."/>
                                     </Grid>
                                 </Grid>
                             </Border>

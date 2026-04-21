@@ -1,64 +1,129 @@
 # Security and releases: Knode / KindleNotesAgent
 
-This document is the **maintainer’s map** for going from **local changes** to a **GitHub Release** with a downloadable installer, and for **security** expectations around keys, binaries, and automation.
+This document is the **maintainer path** from local changes to a **GitHub Release** asset (`KnodeSetup-x.y.z.exe`), plus the **minimum security rules** you must not violate.
 
-**Repository root** means the folder that contains **`dotnet\`**, **`docs\`**, **`scripts\`**, and **`.github\`**. Commands assume **Windows PowerShell** and `cd` to that root unless noted.
+**How to read it**
 
----
+- Follow **Phases 1–6** in order.
+- Each phase ends with **“Details”** pointing to an appendix with copy-paste commands and footguns.
+- If you only need commands, jump to **[Appendix A — Commands (copy/paste)](#appendix-a-commands)**.
 
-## End-to-end: from project update to Release
-
-Follow this path when you are ready to ship a new **Knode** version.
-
-| Phase | What you do | Outcome |
-|--------|----------------|--------|
-| **1. Audit** | Run **`scripts\security-audit.ps1`** (NuGet + Python). Fix issues. | Tree is dependency-clean enough to release. |
-| **2. Version** | Run **`scripts\Bump-KnodeVersion.ps1`** (**minor** = patch +1; **major** = middle +1, patch 0), or edit **`dotnet\Knode\Knode.csproj`** (`<Version>`) and **`dotnet\installer\Knode.iss`** (`MyAppVersion`) so they **match** (`Major.Minor.Patch`). | Next semver is fixed in source. |
-| **3. Build & package** | **`dotnet build .\dotnet\Knode.sln -c Release`** and optionally **`dotnet\build-installer.ps1`**, **or** one script: **`scripts\Build-KnodeRelease.ps1`** (optional bump + build + Inno). | **`dotnet\publish\`**, local **`KnodeSetup-x.y.z.exe`** in **`dotnet\dist-installer\`** when Inno is installed. |
-| **4. Smoke test** | **`dotnet run --project .\dotnet\Knode\Knode.csproj -c Release`** or install the local **`KnodeSetup-*.exe`**. | Confirms the build runs before you tag. |
-| **5. Push source** | **`git add`**, **`git commit`**, **`git push origin main`**. | **main** updates; **Security audit** and **Knode installer** workflows run on push. |
-| **6. Tag → Release** | **`scripts\Push-KnodeReleaseTag.ps1`** (try **`-WhatIf`** first). | Script **reads `<Version>` from `Knode.csproj`**, checks **`Knode.iss`**, creates **`vX.Y.Z`**, pushes it. **Actions → Knode installer** builds; **Releases** gets **`KnodeSetup-X.Y.Z.exe`**. |
-
-**You do not type the version again at tag time.** `Push-KnodeReleaseTag.ps1` takes the version from the **already committed** `.csproj` (and verifies `.iss`). Step 2 is the only place you set the semver for that release.
-
-**All-in-one local script:** **`scripts\Build-KnodeRelease.ps1`** — optional interactive bump, then **`dotnet build`** and **`dotnet\build-installer.ps1`**. Flags: **`-SkipVersionBump`** (rebuild only), **`-BumpVersion`** (always run bump), **`-InnoPath "..."`** if **`ISCC.exe`** is not on `PATH`. Plain **`dotnet build`** and **CI** do **not** run this script (no prompts in automation).
+**Repository root** is the folder that contains **`dotnet\`**, **`docs\`**, **`scripts\`**, and **`.github\`**. Unless a command says otherwise, open PowerShell **here**.
 
 ---
 
-## Where end users get the installer
+<h2 id="release-checklist-overview">Release checklist (overview)</h2>
 
-**Not** a folder in the repo browser (`docs`, `dotnet`, etc.). **No** checked-in **`KnodeSetup-*.exe`**.
-
-Users open **[GitHub Releases](https://github.com/baskar-commits/KNode/releases)** for this repo → download **`KnodeSetup-x.y.z.exe`** from **Assets** on the **Latest** (or chosen) release. (Forks: replace `OWNER/REPO` in that URL if you publish releases elsewhere.)
-
-Product copy also points here: **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)** (and the published HTML from the README).
-
-**Actions → workflow artifact** without a tag is useful for debugging; the **supported** install path for outsiders is the **Release asset**.
-
----
-
-## API keys and GitHub
-
-- **Never commit** real API keys. The repo ships **`appsettings.json`** with **empty** `Knode:Agent:ApiKey` and `Knode:Gemini:ApiKey`.
-- Use **`appsettings.Local.json`** (see root `.gitignore`) or **`AGENT_API_KEY`**, **`GEMINI_API_KEY`**, **`GOOGLE_API_KEY`** for local dev.
-- Knode can store a key with **Windows DPAPI** under `%LocalAppData%\Knode\`. That is **not** a substitute for full-disk encryption or an enterprise vault.
-
-## Source vs installer
-
-- **`git clone`** is **source** only; no production secrets in tree if you follow the rules above.
-- **Release** **`KnodeSetup-x.y.z.exe`** contains **compiled** bits and the same default empty keys. Users still add their own keys at runtime.
-- Shipping **only** the installer does **not** hide that the app uses Google APIs; it hides **source**. Treat API keys like passwords.
-
-## Corpus data
-
-- **`corpus.jsonl`** is **private** reading data; it is **not** in the repo. See **[initial setup](KNODE-MVP-GUIDE.md#4-corpus-install-and-first-run)**.
-- **`.gitignore`** ignores **`**/corpus.jsonl`** broadly; **`mvp/data/README.md`** is the tracked stub.
+| Phase | Goal | Where to read |
+|------:|------|----------------|
+| 1 | Prove dependencies are clean enough to ship | [Phase 1](#phase-1-dependency-audit) · [Appendix A](#appendix-a-commands) |
+| 2 | Pick the next semver and make **source files agree** | [Phase 2](#phase-2-version-bump--sync-checkpoint) · [Appendix A](#appendix-a-commands) |
+| 3 | Build Release binaries and (optionally) the installer | [Phase 3](#phase-3-build--package) · [Appendix A](#appendix-a-commands) |
+| 4 | Smoke test locally | [Phase 4](#phase-4-smoke-test) · [Appendix A](#appendix-a-commands) |
+| 5 | Commit + push `main` | [Phase 5](#phase-5-commit--push-main) · [Appendix A7](#appendix-a7-commit-push) · [Appendix D](#appendix-d-secrets) |
+| 6 | Tag → GitHub Release asset | [Phase 6](#phase-6-tag--github-release) · [Appendix A8](#appendix-a8-tag) · [Appendix B](#appendix-b-github-ci) |
 
 ---
 
-## Commands reference (same story, more detail)
+<h2 id="phase-1-dependency-audit">Phase 1 — Dependency audit</h2>
 
-### Dependency audit (before UI work or a release)
+**Do**
+
+- Run `scripts\security-audit.ps1`.
+- If it reports actionable issues, fix them before continuing.
+
+**Done when**
+
+- NuGet vulnerability scan is clean (or you have a documented exception you accept for this release).
+- Python lockfile audits are clean (this repo documents one known ignore path for `mvp/` — see [Appendix C](#appendix-c-python-cve)).
+
+**Details:** [Appendix A — Commands](#appendix-a-commands) · [Appendix C](#appendix-c-python-cve)
+
+---
+
+<h2 id="phase-2-version-bump--sync-checkpoint">Phase 2 — Version bump + sync checkpoint</h2>
+
+**Source of truth**
+
+- `dotnet\Knode\Knode.csproj` → `<Version>X.Y.Z</Version>`
+- `dotnet\installer\Knode.iss` → `#define MyAppVersion "X.Y.Z"`
+
+**Hard gate (before Phase 5)**
+
+1. Set `X.Y.Z` in **both** files.
+2. Confirm both read the **same** `X.Y.Z`.
+3. Only after Phase 5 push does GitHub “know” the new version — **local builds do not update GitHub by themselves**.
+
+**Details:** [Appendix A — Commands](#appendix-a-commands)
+
+---
+
+<h2 id="phase-3-build--package">Phase 3 — Build + package</h2>
+
+**Do**
+
+- `dotnet build .\dotnet\Knode.sln -c Release`
+- Optional installer: run `dotnet\build-installer.ps1` (requires Inno / `ISCC.exe`)
+
+**Done when**
+
+- Release build succeeds.
+- If packaging succeeded: `dotnet\dist-installer\KnodeSetup-X.Y.Z.exe` exists.
+
+**Details:** [Appendix A — Commands](#appendix-a-commands) (includes **repo root vs `dotnet\` folder** path rules)
+
+---
+
+<h2 id="phase-4-smoke-test">Phase 4 — Smoke test</h2>
+
+**Do**
+
+- Run the app from Release bits **or** install the local `KnodeSetup-*.exe`.
+- Click through: Setup → Build index → Ask (and any connectors you ship in that release, e.g. OneNote).
+
+**Done when**
+
+- No startup crash, key/index flows work, and you are willing to put your name on the release.
+
+**Details:** [Appendix A — Commands](#appendix-a-commands)
+
+---
+
+<h2 id="phase-5-commit--push-main">Phase 5 — Commit + push `main`</h2>
+
+**Do**
+
+- `git status` / `git diff` — confirm **no secrets** and **no build outputs** are staged.
+- Commit with a message that states what shipped (features + version bump if any).
+- `git push origin main`
+
+**Never commit**
+
+- Real API keys, tokens, or private corpora (`corpus.jsonl`).
+- Connector secrets in tracked files when they should live in `appsettings.Local.json` (gitignored).
+
+**Details:** [Appendix A7 — Commit + push](#appendix-a7-commit-push) · [Appendix D — Secret hygiene + local data](#appendix-d-secrets)
+
+---
+
+<h2 id="phase-6-tag--github-release">Phase 6 — Tag → GitHub Release</h2>
+
+**Do**
+
+- Run `scripts\Push-KnodeReleaseTag.ps1` with `-WhatIf` first, then for real.
+- Confirm the Release asset appears on GitHub and matches the intended version.
+
+**Important**
+
+- `Push-KnodeReleaseTag.ps1` reads `<Version>` from the **already pushed** `Knode.csproj` and checks `Knode.iss` matches.
+
+**Details:** [Appendix A8 — Tag](#appendix-a8-tag) · [Appendix B — CI + download location](#appendix-b-github-ci)
+
+---
+
+<h2 id="appendix-a-commands">Appendix A — Commands (copy/paste)</h2>
+
+### A.1 Dependency audit
 
 ```powershell
 cd C:\path\to\KindleNotesAgent
@@ -66,15 +131,27 @@ python -m pip install pip-audit
 powershell -ExecutionPolicy Bypass -File .\scripts\security-audit.ps1
 ```
 
-Restores **`dotnet\Knode.sln`**, runs **`dotnet list … --vulnerable`**, **`pip-audit`** on **`mvp\requirements.txt`** and **`spike\webview-notebook\requirements.txt`**. See **Deeper checks** below for manual **`dotnet list`**, **pip-tools**, and the **transformers** advisory.
-
-### Compile only
+### A.2 Version bump (optional helper)
 
 ```powershell
+cd C:\path\to\KindleNotesAgent
+powershell -ExecutionPolicy Bypass -File .\scripts\Bump-KnodeVersion.ps1
+```
+
+If you bump manually, edit **`dotnet\Knode\Knode.csproj`** and **`dotnet\installer\Knode.iss`** together.
+
+### A.3 Build (Release)
+
+```powershell
+cd C:\path\to\KindleNotesAgent
 dotnet build .\dotnet\Knode.sln -c Release
 ```
 
-### Installer locally (parity with CI)
+### A.4 Installer (Inno)
+
+Run the block that matches your **current directory**.
+
+**From repo root** (`...\KindleNotesAgent`):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\dotnet\build-installer.ps1
@@ -82,46 +159,141 @@ powershell -ExecutionPolicy Bypass -File .\dotnet\build-installer.ps1
 powershell -ExecutionPolicy Bypass -File .\dotnet\build-installer.ps1 -InnoPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 ```
 
-Produces **`dotnet\publish\`** and **`dotnet\dist-installer\KnodeSetup-x.y.z.exe`** when Inno is available; otherwise publish only plus a warning.
+**From `dotnet` folder** (`...\KindleNotesAgent\dotnet`):
 
-### Run the UI from source
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
+# or:
+powershell -ExecutionPolicy Bypass -File .\build-installer.ps1 -InnoPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+```
+
+Common mistake: if you are already in `dotnet`, do **not** prefix `.\dotnet\...` (that resolves to `dotnet\dotnet\...`).
+
+### A.5 Smoke test: run UI from source (Release)
+
+**From repo root**:
 
 ```powershell
 dotnet run --project .\dotnet\Knode\Knode.csproj -c Release
 ```
 
-Omit **`-c Release`** for Debug. For **Build index** / **Ask**, configure **`appsettings.Local.json`** or env vars with a **Gemini** key.
-
-### Commit, push **main**, then tag
-
-After **`<Version>`** and **`MyAppVersion`** match and you are satisfied:
+**From `dotnet` folder**:
 
 ```powershell
+dotnet run --project .\Knode\Knode.csproj -c Release
+```
+
+### A.6 Optional all-in-one local release helper
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+powershell -ExecutionPolicy Bypass -File .\scripts\Build-KnodeRelease.ps1
+```
+
+<h3 id="appendix-a7-commit-push">A.7 Commit + push `main`</h3>
+
+```powershell
+cd C:\path\to\KindleNotesAgent
 git status
-git add .\dotnet\Knode\Knode.csproj .\dotnet\installer\Knode.iss
 git add .
-git commit -m "Release 0.2.3: bump app and installer version"
+git commit -m "Release X.Y.Z: <short summary>"
 git push origin main
 ```
 
-Then:
+<h3 id="appendix-a8-tag">A.8 Tag (after push)</h3>
 
 ```powershell
+cd C:\path\to\KindleNotesAgent
 powershell -ExecutionPolicy Bypass -File .\scripts\Push-KnodeReleaseTag.ps1 -WhatIf
 powershell -ExecutionPolicy Bypass -File .\scripts\Push-KnodeReleaseTag.ps1
 ```
 
-**Other sync options** (not required today): generate Inno version from MSBuild; **MinVer** / **GitVersion** from tags only.
-
 ---
 
-## CI: **Knode installer** workflow
+<h2 id="appendix-b-github-ci">Appendix B — GitHub CI + where users download</h2>
+
+### CI: **Knode installer** workflow
 
 **`.github/workflows/knode-installer.yml`** runs on **push to `main`**, **`workflow_dispatch`**, and **tag `v*`**. It publishes **`dotnet/Knode`**, runs **Inno** on **`Knode.iss`**, uploads **`KnodeSetup-*`** as an **artifact**, and on **`v*`** tags **creates/updates a GitHub Release** and attaches the **`.exe`**.
 
+### Where end users should download
+
+**Not** from random folders in the repo browser. **No** checked-in **`KnodeSetup-*.exe`**.
+
+Users should download from **[GitHub Releases](https://github.com/baskar-commits/KNode/releases)** → **Assets** on the release you intend them to use.
+
+Product copy also points here: **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)**.
+
+**Workflow artifacts without a tag** are for debugging; the **supported** external install path is the **Release asset**.
+
 ---
 
-## Windows trust: SmartScreen, Defender, signing
+<h2 id="appendix-c-python-cve">Appendix C — Python CVE context (maintainers)</h2>
+
+### `transformers` / `sentence-transformers` (CVE context)
+
+**`pip-audit`** may report **CVE-2026-1839** on **`transformers`** (affected builds are before **5.0.0rc3**) via **`sentence-transformers`**. This repo’s CLI is **inference-oriented**; do not point **untrusted** checkpoint paths at training APIs. **`sentence-transformers` 3.x** may pin **`transformers`** below **5.x** until upstream relaxes; mitigations include **`torch>=2.6`** in **`mvp/requirements.in`** and re-auditing in a clean venv. The **Knode Windows app** does not ship the Python **transformers** stack.
+
+### GitHub Actions: security audit
+
+**`.github/workflows/security-audit.yml`** runs on **push** and **pull_request** (**.NET** vulnerable packages + **`pip-audit`** on the same lockfiles). It may **ignore** a specific CVE on **`pip-audit`** until **`transformers` 5+** is compatible — see the workflow file; remove the ignore when fixed.
+
+### Python lockfile (`mvp/`)
+
+Edit **`mvp/requirements.in`**, then:
+
+```powershell
+cd mvp
+python -m pip install pip-tools
+pip-compile requirements.in -o requirements.txt
+```
+
+Commit **both** **`requirements.in`** and **`requirements.txt`**.
+
+### Manual .NET (optional)
+
+```powershell
+cd dotnet
+dotnet restore Knode.sln
+dotnet list Knode.sln package --vulnerable --include-transitive
+dotnet list Knode.sln package --outdated
+```
+
+---
+
+<h2 id="appendix-d-secrets">Appendix D — Secret hygiene + local data</h2>
+
+### API keys and GitHub
+
+- **Never commit** real API keys. The repo ships **`appsettings.json`** with **empty** `Knode:Agent:ApiKey` and `Knode:Gemini:ApiKey`.
+- Prefer **`appsettings.Local.json`** (gitignored) for machine-local values like **`Knode:OneNote:ClientId`**.
+- Use env vars **`AGENT_API_KEY`**, **`GEMINI_API_KEY`**, **`GOOGLE_API_KEY`** for local dev.
+- Knode can store a key with **Windows DPAPI** under `%LocalAppData%\Knode\`. That is **not** a substitute for full-disk encryption or an enterprise vault.
+
+### Source vs installer
+
+- **`git clone`** is **source** only; no production secrets in tree if you follow the rules above.
+- **Release** **`KnodeSetup-x.y.z.exe`** contains **compiled** bits and the same default empty keys. Users still add their own keys at runtime.
+
+### Corpus data
+
+- **`corpus.jsonl`** is **private** reading data; it is **not** in the repo. See **[initial setup](KNODE-MVP-GUIDE.md#4-corpus-install-and-first-run)**.
+- **`.gitignore`** ignores **`**/corpus.jsonl`** broadly; **`mvp/data/README.md`** is the tracked stub.
+
+### OneNote connector data and local storage
+
+- OneNote content used for retrieval is synced to local artifacts under **`%LocalAppData%\Knode\`** during Build index.
+- Key files:
+  - **`onenote_settings.json`**: selected section ids/labels, sync watermark (`LastSyncUtc`), build signature metadata.
+  - **`onenote_records.json`**: local snapshot rows of synced OneNote page text/metadata.
+  - **`index\records.json`** + **`index\vectors.bin`**: combined retrieval index rows/vectors (Kindle + selected OneNote).
+  - **MSAL token cache** file (local app data): supports silent auth reuse between Connect / Select sections / Build index.
+- At normal **Ask** time, Knode retrieves from local index; it does **not** require live Graph reads for each question.
+- If you disable OneNote or change selected sections, rebuild index to align persisted retrieval state.
+
+---
+
+<h2 id="appendix-e-windows-trust">Appendix E — Windows trust + signing</h2>
 
 Community builds are often **unsigned**. Expect:
 
@@ -139,42 +311,7 @@ Community builds are often **unsigned**. Expect:
 
 ---
 
-## Deeper checks (maintainers)
-
-Automated scans find **known-bad library versions**; they do **not** replace code review or a pentest.
-
-### Manual .NET (optional)
-
-```powershell
-cd dotnet
-dotnet restore Knode.sln
-dotnet list Knode.sln package --vulnerable --include-transitive
-dotnet list Knode.sln package --outdated
-```
-
-Prefer **.NET 8** patch lines for **`Microsoft.Extensions.*`** / **`System.*`** unless you intentionally retarget.
-
-### Python lockfile (`mvp/`)
-
-Edit **`mvp/requirements.in`**, then:
-
-```powershell
-cd mvp
-python -m pip install pip-tools
-pip-compile requirements.in -o requirements.txt
-```
-
-Commit **both** **`requirements.in`** and **`requirements.txt`**.
-
-### `transformers` / `sentence-transformers` (CVE context)
-
-**`pip-audit`** may report **CVE-2026-1839** on **`transformers`** (affected builds are before **5.0.0rc3**) via **`sentence-transformers`**. This repo’s CLI is **inference-oriented**; do not point **untrusted** checkpoint paths at training APIs. **`sentence-transformers` 3.x** may pin **`transformers`** below **5.x** until upstream relaxes; mitigations include **`torch>=2.6`** in **`requirements.in`** and re-auditing in a clean venv. The **Knode Windows app** does not ship the Python **transformers** stack.
-
-### GitHub Actions: security audit
-
-**`.github/workflows/security-audit.yml`** runs on **push** and **pull_request** (**.NET** vulnerable packages + **`pip-audit`** on the same lockfiles). It may **ignore** a specific CVE on **`pip-audit`** until **`transformers` 5+** is compatible — see the workflow file; remove the ignore when fixed.
-
-### What this repo does **not** automate
+## What this repo does **not** automate
 
 - **BinSkim** / full **SDL** binary analysis.
 - **Dependabot** / **GitHub Advanced Security** (enable per org policy).

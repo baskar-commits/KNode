@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from html import unescape
 from pathlib import Path
 
 try:
@@ -81,7 +82,51 @@ def rewrite_links(html: str) -> str:
     return re.sub(r'(href)=(["\'])([^"\']+)(\2)', sub, html, flags=re.I)
 
 
-def wrap_html(title: str, body: str) -> str:
+def render_mermaid_blocks(body_html: str) -> tuple[str, bool]:
+    pattern = re.compile(
+        r"<pre><code class=\"language-mermaid\">(.*?)</code></pre>",
+        flags=re.S,
+    )
+
+    has_mermaid = False
+
+    def repl(m: re.Match) -> str:
+        nonlocal has_mermaid
+        has_mermaid = True
+        code = unescape(m.group(1)).strip()
+        return f'<div class="mermaid">\n{code}\n</div>'
+
+    return pattern.sub(repl, body_html), has_mermaid
+
+
+def wrap_html(title: str, body: str, has_mermaid: bool = False) -> str:
+    mermaid_head = ""
+    mermaid_tail = ""
+    if has_mermaid:
+        mermaid_head = """
+  <style>
+    .mermaid {
+      margin: 1.2rem 0;
+      padding: 0.75rem 0.25rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+  </style>
+"""
+        mermaid_tail = """
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "loose",
+      theme: "neutral",
+      flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" }
+    });
+  </script>
+"""
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -89,12 +134,14 @@ def wrap_html(title: str, body: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title} | Knode docs</title>
   <link rel="stylesheet" href="assets/docs-html.css" />
+{mermaid_head}
 </head>
 <body>
   <article class="doc">
     <a class="back" href="index.html">← Documentation hub</a>
     {body}
   </article>
+{mermaid_tail}
 </body>
 </html>
 """
@@ -115,8 +162,9 @@ def main() -> None:
         md.reset()
         body = md.convert(text)
         body = rewrite_links(body)
+        body, has_mermaid = render_mermaid_blocks(body)
         out = DOCS / (name[:-3] + ".html")
-        out.write_text(wrap_html(title, body), encoding="utf-8")
+        out.write_text(wrap_html(title, body, has_mermaid=has_mermaid), encoding="utf-8")
         print(f"Wrote {out.relative_to(ROOT)}")
 
 

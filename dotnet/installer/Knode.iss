@@ -2,7 +2,7 @@
 ; Run from repo: powershell -File dotnet/build-installer.ps1
 
 #define MyAppName "Knode"
-#define MyAppVersion "0.2.2"
+#define MyAppVersion "0.3.0"
 #define MyAppPublisher "KindleNotesAgent"
 #define MyAppExeName "Knode.exe"
 #define PublishDir "..\publish"

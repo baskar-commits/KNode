@@ -11,7 +11,7 @@
   <article class="doc">
     <a class="back" href="index.html">← Documentation hub</a>
     <h1>First 15 minutes with Knode</h1>
-<p>Use this after <strong><a href="KNODE-INSTALL.html">KNODE-INSTALL.md</a></strong>. Goal: <strong>corpus</strong> → <strong>API key</strong> → <strong>index</strong> → <strong>first answer</strong>.</p>
+<p>Use this after <strong><a href="KNODE-INSTALL.html">KNODE-INSTALL.md</a></strong>. Goal: <strong>Kindle <code>corpus.jsonl</code></strong> → <strong>(optional) OneNote sections</strong> → <strong>API key</strong> → <strong>Build index</strong> → <strong>first Ask</strong>.</p>
 <hr />
 <h2>1. Create or locate <code>corpus.jsonl</code></h2>
 <p>Knode does <strong>not</strong> ship reading data. You need a <strong>JSONL</strong> file: one JSON object per line (Kindle highlight rows). Typical path:</p>
@@ -22,23 +22,34 @@
 <p><strong>In the app:</strong> <strong>Help</strong> → <em>How do I get corpus.jsonl?</em> repeats this pipeline with commands.</p>
 <hr />
 <h2>2. Open Knode and use <strong>Setup · Corpus &amp; index</strong></h2>
+<p>In the <strong>left nav</strong>, choose <strong>Setup · Corpus &amp; index</strong> (gear).</p>
+<h3>2a. Kindle corpus and Gemini key (required)</h3>
 <ol>
-<li>In the <strong>left nav</strong>, choose <strong>Setup · Corpus &amp; index</strong> (gear).</li>
 <li><strong>Highlight file</strong> → <strong>Browse…</strong> → select your <strong><code>corpus.jsonl</code></strong>.</li>
 <li><strong>AI agent API key</strong> → paste a <strong><a href="https://aistudio.google.com/apikey">Google AI Studio</a></strong> key (this MVP uses <strong>Gemini</strong> only).<br />
    Optional: <strong>Remember API key</strong> (stored with Windows <strong>DPAPI</strong> under <code>%LocalAppData%\Knode\</code>).</li>
+</ol>
+<h3>2b. OneNote (optional)</h3>
+<p>Skip this block if you only want Kindle highlights.</p>
+<ol>
+<li>Complete <strong><a href="KNODE-INSTALL.html#optional-onenote-personal-or-work-microsoft-account">KNODE-INSTALL.md § Optional: OneNote</a></strong> — Entra app registration, <strong><code>http://localhost</code></strong> redirect, delegated <strong><code>Notes.Read</code></strong>, and <strong><code>Knode:OneNote:ClientId</code></strong> in <strong><code>appsettings.Local.json</code></strong> next to <strong><code>Knode.exe</code></strong>.</li>
+<li>In Setup, click <strong>Connect OneNote</strong> and sign in with the Microsoft account that owns your notebooks.</li>
+<li><strong>Select OneNote sections</strong> → pick the sections whose pages you want in the index (personal notebooks you can read in OneNote).</li>
+</ol>
+<h3>2c. Build the index</h3>
+<ol>
 <li>Click <strong>Build index</strong>.<br />
    - First time on a large library may take several minutes (embedding batches).<br />
-   - If you already had an index for the <strong>same</strong> file hash and model, it may load without re-embedding.</li>
+   - If you already had an index for the <strong>same</strong> corpus hash, model, and OneNote selection signature, unchanged rows may <strong>reuse</strong> stored vectors (see <a href="KNODE-ARCHITECTURE.html">KNODE-ARCHITECTURE.md</a>).</li>
+<li>Wait until status shows <strong>ready</strong> (e.g. loaded or built with row counts).</li>
 </ol>
-<p>Wait until status shows <strong>ready</strong> (e.g. loaded or built with highlight count).</p>
 <hr />
 <h2>3. Ask a question</h2>
 <ol>
 <li>Switch the left nav to <strong>Ask</strong>.</li>
 <li>Type a question (or use a <strong>Try a prompt</strong> chip).</li>
 <li>Click <strong>Ask</strong>.</li>
-<li>Read the <strong>Answer</strong>; expand <strong>Sources</strong> to see retrieved passages and match strength.</li>
+<li>Read the <strong>Answer</strong>; expand <strong>Sources</strong> to see retrieved passages and match strength (Kindle books and/or OneNote pages, depending on what indexed).</li>
 </ol>
 <hr />
 <h2>4. If something fails</h2>
@@ -69,6 +80,14 @@
 <tr>
 <td>Wrong or empty retrieval</td>
 <td>Re-run <strong><code>validate_corpus</code></strong> on the JSONL; check <strong>Setup</strong> path matches the file you indexed.</td>
+</tr>
+<tr>
+<td><strong>Connect OneNote</strong> fails / “ClientId is not set”</td>
+<td>Ensure <strong><code>appsettings.Local.json</code></strong> sits next to <strong><code>Knode.exe</code></strong>, with <strong><code>Knode:OneNote:ClientId</code></strong> set to your app’s client ID. Confirm redirect <strong><code>http://localhost</code></strong> and Graph <strong><code>Notes.Read</code></strong> on the registration.</td>
+</tr>
+<tr>
+<td>OneNote pages missing after sync</td>
+<td>Re-open <strong>Select OneNote sections</strong>; confirm sections are checked; <strong>Build index</strong> again after changing selection.</td>
 </tr>
 </tbody>
 </table>

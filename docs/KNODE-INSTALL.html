@@ -41,6 +41,19 @@
 <li><strong><a href="https://developer.microsoft.com/microsoft-edge/webview2/">WebView2 Runtime</a></strong>: Usually already present on Windows 10/11. If answer/source panes stay blank, install the Evergreen runtime.</li>
 </ol>
 <hr />
+<h2 id="optional-onenote-personal-or-work-microsoft-account">Optional: OneNote (personal or work Microsoft account)</h2>
+
+<p>Knode can <strong>merge selected OneNote sections</strong> into the same local index as your Kindle <strong><code>corpus.jsonl</code></strong>. This is <strong>off until you configure it</strong>.</p>
+<ol>
+<li><strong>Register an app</strong> in the <a href="https://entra.microsoft.com/">Microsoft Entra admin center</a> (or <a href="https://portal.azure.com/">Azure Portal</a> → <strong>Microsoft Entra ID</strong> → <strong>App registrations</strong> → <strong>New registration</strong>).<br />
+   - <strong>Supported account types:</strong> include <strong>personal Microsoft accounts</strong> (Knode uses the “common” / work-or-personal audience).<br />
+   - <strong>Redirect URI:</strong> <strong>Public client / native</strong> → <strong><code>http://localhost</code></strong> (must match what the app uses).<br />
+   - <strong>API permissions:</strong> add <strong>Microsoft Graph</strong> delegated <strong><code>Notes.Read</code></strong> (and allow the sign-in flow to include <strong><code>offline_access</code></strong> for refresh).</li>
+<li>Copy the application <strong>(client) ID</strong> and put it in <strong><code>appsettings.Local.json</code></strong> next to <strong><code>Knode.exe</code></strong> (same folder as the installed app, or next to the project when developing). Use the <strong><code>Knode:OneNote:ClientId</code></strong> setting — see tracked <strong><code>dotnet/Knode/appsettings.json</code></strong> for the shape. <strong><code>appsettings.Local.json</code> is gitignored</strong>; do not paste the client ID into files you commit.</li>
+<li>In the app, open <strong>Setup · Corpus &amp; index</strong>, use <strong>Connect OneNote</strong> / <strong>Select OneNote sections</strong>, then <strong>Build index</strong> so Graph sync runs.</li>
+</ol>
+<p>Local snapshot files, token cache, and keys: <strong><a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md">SECURITY-AND-RELEASES.md</a></strong> (OneNote section).</p>
+<hr />
 <h2>Get the installer</h2>
 <ul>
 <li><strong>Recommended:</strong> Open <strong><a href="https://github.com/baskar-commits/KNode/releases">GitHub Releases</a></strong> for this repo, choose the <strong>Latest</strong> release, and download <strong><code>KnodeSetup-x.y.z.exe</code></strong> from <strong>Assets</strong> (the version in the filename matches the release tag). The artifact is built with <a href="https://jrsoftware.org/isinfo.php">Inno Setup</a> via <code>dotnet/build-installer.ps1</code>).</li>
@@ -62,7 +75,7 @@
 </ul>
 <hr />
 <h2>After install</h2>
-<p>Follow <strong><a href="KNODE-FIRST-RUN.html">KNODE-FIRST-RUN.md</a></strong> (corpus file, API key, build index, first questions).</p>
+<p>Follow <strong><a href="KNODE-FIRST-RUN.html">KNODE-FIRST-RUN.md</a></strong> (Kindle <strong><code>corpus.jsonl</code></strong>, optional OneNote setup, API key, <strong>Build index</strong>, first <strong>Ask</strong>).</p>
 <hr />
 <h2>Building the installer yourself (maintainers)</h2>
 <p>On a machine with <strong>.NET 8 SDK</strong> and <strong>Inno Setup 6</strong> (<code>ISCC.exe</code> on PATH):</p>
@@ -72,7 +85,7 @@
 Published app binaries: <strong><code>dotnet/publish/</code></strong> (before Inno wraps them).</p>
 <hr />
 <h2>Privacy and network (short)</h2>
-<p>Knode sends <strong>your question</strong> and <strong>retrieved highlight text</strong> to <strong>Google Gemini</strong> when you click <strong>Ask</strong>, and calls Gemini for <strong>embeddings</strong> during <strong>Build index</strong>. Your <strong>corpus file</strong> and <strong>local index</strong> stay on your PC. Details: <a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md">SECURITY-AND-RELEASES.md</a>.</p>
+<p>Knode sends <strong>your question</strong> and <strong>retrieved passage text</strong> (Kindle and/or OneNote rows from the local index) to <strong>Google Gemini</strong> when you click <strong>Ask</strong>, and calls Gemini for <strong>embeddings</strong> during <strong>Build index</strong>. If you use OneNote, <strong>Microsoft Graph</strong> is called during <strong>Connect</strong> / section selection / <strong>Build index</strong> to sync pages you selected; routine <strong>Ask</strong> uses the <strong>local index</strong> only. Your <strong>corpus file</strong> and <strong>local index</strong> stay on your PC. Details: <a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md">SECURITY-AND-RELEASES.md</a>.</p>
   </article>
 
 </body>

@@ -4,7 +4,7 @@
 
 ## Product intent
 
-**Knode** is a **Windows desktop** assistant for **topic Q&A** over **your Kindle highlights**, with **citations** and room to grow toward **cross-book** themes. Reading data flows through a local **`corpus.jsonl`** (you create it on your machine; it is **not** in this repo). The app **retrieves** relevant passages with **Gemini embeddings**, then **answers** with **Gemini** chat, grounded in what it retrieved.
+**Knode** is a **Windows desktop** assistant for **topic Q&A** over **your own reading notes**, with **citations** and room to grow toward **cross-book** themes. Today that means a local Kindle **`corpus.jsonl`** plus **optional OneNote** sections you choose (synced at index time). Reading and note data stay on your machine except for API calls described in the install and security docs. The app **retrieves** relevant passages with **Gemini embeddings**, then **answers** with **Gemini** chat, grounded in what it retrieved.
 
 ---
 
@@ -39,7 +39,7 @@ Developers: **local build, validation, `dotnet run`, and GitHub Actions** (exact
 
 ## First run
 
-**[KNODE-FIRST-RUN.html](https://baskar-commits.github.io/KNode/KNODE-FIRST-RUN.html)** — point Knode at **`corpus.jsonl`**, API key, **Build index**, then **Ask**.
+**[KNODE-FIRST-RUN.html](https://baskar-commits.github.io/KNode/KNODE-FIRST-RUN.html)** — point Knode at **`corpus.jsonl`**, optionally **OneNote**, API key, **Build index**, then **Ask**.
 
 Producing **`corpus.jsonl`**: **[KNODE-MVP-GUIDE §4](https://baskar-commits.github.io/KNode/KNODE-MVP-GUIDE.html#4-corpus-install-and-first-run)** (WebView spike, dedupe, `parse_dump`, `validate_corpus`).
 

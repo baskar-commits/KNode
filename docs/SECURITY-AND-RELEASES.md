@@ -20,7 +20,7 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 | 2 | Pick the next semver and make **source files agree** | [Phase 2](#phase-2-version-bump--sync-checkpoint) · [Appendix A](#appendix-a-commands) |
 | 3 | Build Release binaries and (optionally) the installer | [Phase 3](#phase-3-build--package) · [Appendix A](#appendix-a-commands) |
 | 4 | Smoke test locally | [Phase 4](#phase-4-smoke-test) · [Appendix A](#appendix-a-commands) |
-| 5 | Commit + push `main` | [Phase 5](#phase-5-commit--push-main) · [Appendix A7](#appendix-a7-commit-push) · [Appendix D](#appendix-d-secrets) |
+| 5 | Commit + push `main` | [Phase 5](#phase-5-commit--push-main) · [Appendix A9](#appendix-a9-docs) · [Appendix A7](#appendix-a7-commit-push) · [Appendix D](#appendix-d-secrets) |
 | 6 | Tag → GitHub Release asset | [Phase 6](#phase-6-tag--github-release) · [Appendix A8](#appendix-a8-tag) · [Appendix B](#appendix-b-github-ci) |
 
 ---
@@ -63,7 +63,7 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 **Do**
 
 - `dotnet build .\dotnet\Knode.sln -c Release`
-- Optional installer: run `dotnet\build-installer.ps1` (requires Inno / `ISCC.exe`)
+- Optional installer: run **`dotnet\build-installer.ps1`** (publish + Inno). Requires **Inno Setup** (`ISCC.exe`). If the compiler is installed but **not on `PATH`**, pass **`-InnoPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"`** (copy/paste under **A.4** in [Appendix A](#appendix-a-commands)).
 
 **Done when**
 
@@ -93,8 +93,9 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 
 **Do**
 
-- `git status` / `git diff` — confirm **no secrets** and **no build outputs** are staged.
-- Commit with a message that states what shipped (features + version bump if any).
+- **Documentation (if this release touched docs):** Regenerate **`docs/KNODE-*.html`** from Markdown when you changed the matching **`docs/KNODE-*.md`** (see [Appendix A9](#appendix-a9-docs)). Commit **`.md` + generated `.html` together** so **GitHub Pages** (`/docs` on `main`) matches the repo. Hand-maintained pages such as **`docs/index.html`** and **`docs/DESIGN.html`** ship as-is—include them in the same commit when you update them.
+- `git status` / `git diff` — confirm **no secrets** and **no build outputs** are staged (see [Appendix A9](#appendix-a9-docs) for suggested commands).
+- Commit with a message that states what shipped (features + version bump + doc changes if any).
 - `git push origin main`
 
 **Never commit**
@@ -102,7 +103,7 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 - Real API keys, tokens, or private corpora (`corpus.jsonl`).
 - Connector secrets in tracked files when they should live in `appsettings.Local.json` (gitignored).
 
-**Details:** [Appendix A7 — Commit + push](#appendix-a7-commit-push) · [Appendix D — Secret hygiene + local data](#appendix-d-secrets)
+**Details:** [Appendix A9 — Documentation sync](#appendix-a9-docs) · [Appendix A7 — Commit + push](#appendix-a7-commit-push) · [Appendix D — Secret hygiene + local data](#appendix-d-secrets)
 
 ---
 
@@ -207,6 +208,41 @@ cd C:\path\to\KindleNotesAgent
 powershell -ExecutionPolicy Bypass -File .\scripts\Push-KnodeReleaseTag.ps1 -WhatIf
 powershell -ExecutionPolicy Bypass -File .\scripts\Push-KnodeReleaseTag.ps1
 ```
+
+<h3 id="appendix-a9-docs">A.9 Documentation sync (Markdown + GitHub Pages HTML)</h3>
+
+**When:** You changed **`docs/KNODE-MVP-GUIDE.md`**, **`KNODE-INSTALL.md`**, **`KNODE-FIRST-RUN.md`**, or **`KNODE-ARCHITECTURE.md`**, or you want published **`KNODE-*.html`** on Pages to match **`main`**.
+
+**Step 1 — Review (no writes)**
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+git status
+git diff --stat
+git diff
+```
+
+Confirm **`appsettings.Local.json`**, **`corpus.jsonl`**, **`dotnet/**/bin/`**, **`dotnet/**/obj/`**, **`dotnet/dist-installer/`**, and other ignored artifacts are **not** listed under “Changes to be committed”. If `git add .` would pick them up, fix **`.gitignore`** or use a **narrow `git add`** (see A.7).
+
+**Regenerate HTML from Markdown** (from repo root; one-time deps: `python -m pip install -r scripts/requirements-doc-html.txt`):
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+python scripts/build_doc_html.py
+git status
+git diff --stat docs/
+```
+
+**Step 2 — Commit + push** (example: doc-only follow-up after a feature release):
+
+```powershell
+cd C:\path\to\KindleNotesAgent
+git add README.md docs/
+git commit -m "Docs: OneNote install/first-run, hub, journey; SECURITY Phase 5 + A.9"
+git push origin main
+```
+
+Adjust paths if you only changed a subset; **`git add docs/`** is usual for doc waves that include **`docs/index.html`** and **`docs/DESIGN.html`**.
 
 ---
 

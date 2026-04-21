@@ -23,6 +23,21 @@
 
 ---
 
+<h2 id="optional-onenote-personal-or-work-microsoft-account">Optional: OneNote (personal or work Microsoft account)</h2>
+
+Knode can **merge selected OneNote sections** into the same local index as your Kindle **`corpus.jsonl`**. This is **off until you configure it**.
+
+1. **Register an app** in the [Microsoft Entra admin center](https://entra.microsoft.com/) (or [Azure Portal](https://portal.azure.com/) → **Microsoft Entra ID** → **App registrations** → **New registration**).
+   - **Supported account types:** include **personal Microsoft accounts** (Knode uses the “common” / work-or-personal audience).
+   - **Redirect URI:** **Public client / native** → **`http://localhost`** (must match what the app uses).
+   - **API permissions:** add **Microsoft Graph** delegated **`Notes.Read`** (and allow the sign-in flow to include **`offline_access`** for refresh).
+2. Copy the application **(client) ID** and put it in **`appsettings.Local.json`** next to **`Knode.exe`** (same folder as the installed app, or next to the project when developing). Use the **`Knode:OneNote:ClientId`** setting — see tracked **`dotnet/Knode/appsettings.json`** for the shape. **`appsettings.Local.json` is gitignored**; do not paste the client ID into files you commit.
+3. In the app, open **Setup · Corpus & index**, use **Connect OneNote** / **Select OneNote sections**, then **Build index** so Graph sync runs.
+
+Local snapshot files, token cache, and keys: **[SECURITY-AND-RELEASES.md](SECURITY-AND-RELEASES.md)** (OneNote section).
+
+---
+
 ## Get the installer
 
 - **Recommended:** Open **[GitHub Releases](https://github.com/baskar-commits/KNode/releases)** for this repo, choose the **Latest** release, and download **`KnodeSetup-x.y.z.exe`** from **Assets** (the version in the filename matches the release tag). The artifact is built with [Inno Setup](https://jrsoftware.org/isinfo.php) via `dotnet/build-installer.ps1`).
@@ -48,7 +63,7 @@ Release builds may be **unsigned** or **not** use a **publicly trusted** Authent
 
 ## After install
 
-Follow **[KNODE-FIRST-RUN.md](KNODE-FIRST-RUN.md)** (corpus file, API key, build index, first questions).
+Follow **[KNODE-FIRST-RUN.md](KNODE-FIRST-RUN.md)** (Kindle **`corpus.jsonl`**, optional OneNote setup, API key, **Build index**, first **Ask**).
 
 ---
 
@@ -67,4 +82,4 @@ Published app binaries: **`dotnet/publish/`** (before Inno wraps them).
 
 ## Privacy and network (short)
 
-Knode sends **your question** and **retrieved highlight text** to **Google Gemini** when you click **Ask**, and calls Gemini for **embeddings** during **Build index**. Your **corpus file** and **local index** stay on your PC. Details: [SECURITY-AND-RELEASES.md](SECURITY-AND-RELEASES.md).
+Knode sends **your question** and **retrieved passage text** (Kindle and/or OneNote rows from the local index) to **Google Gemini** when you click **Ask**, and calls Gemini for **embeddings** during **Build index**. If you use OneNote, **Microsoft Graph** is called during **Connect** / section selection / **Build index** to sync pages you selected; routine **Ask** uses the **local index** only. Your **corpus file** and **local index** stay on your PC. Details: [SECURITY-AND-RELEASES.md](SECURITY-AND-RELEASES.md).

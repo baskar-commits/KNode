@@ -14,7 +14,7 @@
 
 **Initial constraints:**
 
-- First source: **Kindle** only; later OneNote, Google, photos, etc.
+- First source: **Kindle** only at the start of the diary; **OneNote (Graph) shipped** in desktop **v0.3.0** (see §10). Later: more connectors, photos, etc.
 - **Distribution:** local desktop for MVP.
 - **Aspirations in the spec:** OAuth to Amazon, sync from [Kindle Notebook](https://read.amazon.com/notebook), async refresh, append merge policy, cross-book narrative.
 
@@ -132,7 +132,8 @@ We mapped **six** paths (extension, WebView, automation, email, file export, thi
 
 **Implemented** under `dotnet/Knode/`:
 
-- **Same `corpus.jsonl`** as the Python MVP: browse or remember path; **persistent vector index** under `%LocalAppData%\Knode\index\` (SHA-256 of corpus + embedding model).
+- **Same `corpus.jsonl`** as the Python MVP: browse or remember path; **persistent vector index** under `%LocalAppData%\Knode\index\` (manifest ties index to corpus hash, embedding model, and optional OneNote selection signature).
+- **Optional OneNote:** **MSAL** public client, **Microsoft Graph** delegated **`Notes.Read`** (+ **`offline_access`**), redirect **`http://localhost`**, accounts in the **work or personal** Microsoft audience. User-supplied **`Knode:OneNote:ClientId`** in **`appsettings.Local.json`**. **Setup** flow: connect → **section picker** → **Build index** merges synced page rows with Kindle JSONL into the same **`VectorIndex`**; **Ask** reads the local index only (no per-question Graph calls).
 - **AI agent API key** stored optionally with **DPAPI**; labels framed for future providers; **MVP still calls Google Gemini** (embed + chat).
 - **Windows installer** via **Inno Setup** (`dotnet/installer/Knode.iss`, build script `dotnet/build-installer.ps1`).
 - **Security / GitHub releases** narrative: [`docs/SECURITY-AND-RELEASES.md`](SECURITY-AND-RELEASES.md).
@@ -166,3 +167,4 @@ This section is a **snapshot** of how a short burst concentrated risk: validate 
 | 2026-04-07 |  | Docs: **KNODE-INSTALL.md**, **KNODE-FIRST-RUN.md**, **KNODE-ARCHITECTURE.md**; root README hub; MVP guide screenshot under **docs/images**. |
 | 2026-04-08 |  | MVP guide opener (agentic framing); §4 corpus + runbook order. |
 | 2026-04-09 |  | §11 three-day execution snapshot; backlog refreshed (RAG/indexing done); pointer table excludes unpublished local-only docs; architecture references prose flow. |
+| 2026-04-21 |  | **OneNote connector:** Graph sync + MSAL + section picker + merged index; §10 expanded; install/first-run/README/DESIGN hub/docs aligned for optional OneNote. Shipped with **Knode v0.3.0** tag. |

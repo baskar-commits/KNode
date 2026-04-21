@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Knode — Product &amp; repository design hub | KindleNotesAgent</title>
-  <meta name="description" content="Knode: Windows desktop assistant for grounded Q&amp;A over your Kindle highlights. Repository navigation, install path, and links to canonical docs." />
+  <meta name="description" content="Knode: Windows desktop assistant for grounded Q&amp;A over your Kindle highlights and optional OneNote sections. Repository navigation, install path, and links to canonical docs." />
   <style>
     :root {
       --bg: #0d1117;
@@ -151,10 +151,10 @@
     <table class="meta">
       <tbody>
         <tr><th>Audience</th><td>End users installing Knode; developers cloning the repo</td></tr>
-        <tr><th>Product</th><td>Windows desktop assistant — topic Q&amp;A over your Kindle highlights with citations (Gemini RAG)</td></tr>
-        <tr><th>Data contract</th><td>Local <code>corpus.jsonl</code> (user-produced; not shipped in the repo)</td></tr>
+        <tr><th>Product</th><td>Windows desktop assistant — topic Q&amp;A over your Kindle highlights and optional OneNote sections, with citations (Gemini RAG)</td></tr>
+        <tr><th>Data contract</th><td>Local <code>corpus.jsonl</code> (user-produced; not shipped in the repo); optional OneNote pages synced at index time into the same local index</td></tr>
         <tr><th>Status</th><td>MVP — ship path via Inno Setup installer + GitHub Releases (see security doc)</td></tr>
-        <tr><th>Last updated</th><td>2026-04-09</td></tr>
+        <tr><th>Last updated</th><td>2026-04-21</td></tr>
       </tbody>
     </table>
 
@@ -176,7 +176,7 @@
     <hr />
 
     <h2 id="summary">1. Executive summary</h2>
-    <p><strong>Knode</strong> answers natural-language questions using <strong>your own</strong> Kindle reading: highlights ingested into <code>corpus.jsonl</code>, embedded with <strong>Google Gemini</strong>, retrieved by cosine similarity, then answered with citations in a <strong>WPF</strong> desktop UI (WebView2 for answer/sources).</p>
+    <p><strong>Knode</strong> answers natural-language questions using <strong>your own</strong> sources: Kindle highlights in <code>corpus.jsonl</code> plus <strong>optional</strong> OneNote pages from sections you select. Passages are embedded with <strong>Google Gemini</strong>, retrieved by cosine similarity from a <strong>local</strong> index, then answered with citations in a <strong>WPF</strong> desktop UI (WebView2 for answer/sources). Microsoft Graph runs during OneNote connect and <strong>Build index</strong>, not on every Ask.</p>
     <p>The shipped loop is retrieval-augmented generation (RAG). Product language emphasizes <strong>grounded</strong>, citation-backed recall across books; richer agentic behavior remains roadmap.</p>
 
     <blockquote>
@@ -223,7 +223,7 @@
     <p>Maintainers: Inno Setup <a href="https://github.com/baskar-commits/KNode/blob/main/dotnet/installer/Knode.iss">Knode.iss</a>, <a href="https://github.com/baskar-commits/KNode/blob/main/dotnet/build-installer.ps1">build-installer.ps1</a>; trust and release process in <a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md">SECURITY-AND-RELEASES.md</a>.</p>
 
     <h2 id="firstrun">4. First run</h2>
-    <p>Corpus path, API key, build index, first Ask — <a href="https://baskar-commits.github.io/KNode/KNODE-FIRST-RUN.html">KNODE-FIRST-RUN.html</a>. Producing <code>corpus.jsonl</code>: <a href="https://baskar-commits.github.io/KNode/KNODE-MVP-GUIDE.html#4-corpus-install-and-first-run">KNODE-MVP-GUIDE.html §4</a>.</p>
+    <p>Corpus path, optional OneNote registration and section pick, API key, build index, first Ask — <a href="https://baskar-commits.github.io/KNode/KNODE-FIRST-RUN.html">KNODE-FIRST-RUN.html</a>. Producing <code>corpus.jsonl</code>: <a href="https://baskar-commits.github.io/KNode/KNODE-MVP-GUIDE.html#4-corpus-install-and-first-run">KNODE-MVP-GUIDE.html §4</a>. OneNote app setup: <a href="https://baskar-commits.github.io/KNode/KNODE-INSTALL.html">KNODE-INSTALL.html</a> (optional section).</p>
 
     <hr />
 

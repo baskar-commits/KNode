@@ -238,7 +238,7 @@ git diff --stat docs/
 ```powershell
 cd C:\path\to\KindleNotesAgent
 git add README.md docs/
-git commit -m "Docs: OneNote install/first-run, hub, journey; SECURITY Phase 5 + A.9"
+git commit -m "Docs: OneNote across install/first-run, hub, journey; SECURITY Phase 5 + A.9"
 git push origin main
 ```
 

@@ -1,21 +1,21 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Knode — documentation hub</title>
+  <title>Knode - documentation hub</title>
   <link rel="stylesheet" href="assets/docs-html.css" />
 </head>
 <body>
   <div class="hub-inner">
     <a class="home" href="https://github.com/baskar-commits/KNode">github.com/baskar-commits/KNode</a>
     <h1>Knode documentation hub</h1>
-    <p>Live site (GitHub Pages, site root — no <code>docs/</code> in the path): <strong><a href="https://baskar-commits.github.io/KNode/">baskar-commits.github.io/KNode/</a></strong>. Markdown sources: <a href="https://github.com/baskar-commits/KNode/tree/main/docs">github.com/…/docs</a>.</p>
+    <p>Live site (GitHub Pages, site root - no <code>docs/</code> in the path): <strong><a href="https://baskar-commits.github.io/KNode/">baskar-commits.github.io/KNode/</a></strong>. Markdown sources: <a href="https://github.com/baskar-commits/KNode/tree/main/docs">github.com/…/docs</a>.</p>
 
     <h2>Product &amp; design</h2>
     <div class="cards">
-      <a class="card" href="https://baskar-commits.github.io/KNode/DESIGN.html"><strong>DESIGN.html</strong><span>Repository overview, install pointers, Pages troubleshooting</span></a>
       <a class="card" href="https://baskar-commits.github.io/KNode/KNODE-MVP-GUIDE.html"><strong>KNODE-MVP-GUIDE</strong><span>Canonical product intent, personas, architecture summary, corpus pipeline, optional OneNote</span></a>
+      <a class="card" href="https://baskar-commits.github.io/KNode/KNODE-ARCHITECTURE.html"><strong>KNODE-ARCHITECTURE</strong><span>Tiers, components, RAG loop, local index, and connector boundaries</span></a>
     </div>
 
     <h2>Install &amp; run</h2>
@@ -27,14 +27,8 @@
 
     <h2>Engineering</h2>
     <div class="cards">
-      <a class="card" href="https://baskar-commits.github.io/KNode/KNODE-ARCHITECTURE.html"><strong>KNODE-ARCHITECTURE</strong><span>Tiers, components, RAG loop, vector stores</span></a>
+      <a class="card" href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md"><strong>SECURITY-AND-RELEASES</strong><span>Release phases, push/tag checks, secrets, installer delivery</span></a>
     </div>
-
-    <h2>Regenerate HTML from Markdown</h2>
-    <p>From the repo root:</p>
-    <pre><code>python -m pip install -r scripts/requirements-doc-html.txt
-python scripts/build_doc_html.py</code></pre>
-    <p>Override GitHub slug: <code>set GITHUB_DOCS_SLUG=owner/repo</code> then run the script.</p>
   </div>
 </body>
 </html>

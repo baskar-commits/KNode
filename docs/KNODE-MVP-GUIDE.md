@@ -16,29 +16,29 @@ The **current version** proves that on **Windows** you can ask over a local **Ki
 
 **Knode** is a **Windows desktop** assistant that answers **natural-language questions** about your own sources: **Kindle highlights/notes** in local **`corpus.jsonl`** and optional **OneNote sections** you choose in Setup. Answers are **retrieval-grounded**: the model sees **your** passages first, then synthesizes with **citations** (book/section, location/page, quote). The wedge is **personal, citation-backed recall**, not generic web chat.
 
-**Repository policy:** The **GitHub repo ships source and docs only**: **no `corpus.jsonl`**, no sample highlights. **`**/corpus.jsonl`** is gitignored at repo root. After clone or install, **every user** produces or selects their own corpus (see [§4](#4-corpus-install-and-first-run)).
+**Repository policy:** The **GitHub repo ships source and docs only**: **no `corpus.jsonl`**, no sample highlights. **`**/corpus.jsonl`** is gitignored at repo root. After clone or install, every user provides their own corpus and optional connector configuration.
 
 ### Problem
 
-Highlights in [Kindle Notebook](https://read.amazon.com/notebook) are organized **by book**, but **themes span books**. Finding “what did I read about confidence?” across the library is slow; keyword search misses concepts. Users want **their** reading connected by topic **without** fabricated quotes.
+Highlights in [Kindle Notebook](https://read.amazon.com/notebook) are organized **by book**, but **themes span books and notes**. Finding "what did I read about confidence?" across Kindle and OneNote is slow; keyword search misses concepts. Users want **their** material connected by topic without fabricated quotes.
 
 ### Primary persona (MVP)
 
 **Alex, the returning reader**
 
-- Reads on Kindle, highlights actively, reviews in Notebook.
-- Wants: “What have I read about *X*?” before journaling, prep, or decisions.
-- Expects **book-level references** on claims and, when retrieval supports it, **cross-book threads** (same theme, contrast, progression).
-- Accepts a **practical** ingestion path today: **export / capture → structured file → app** (see [§4](#4-corpus-install-and-first-run)), while the **product language** still points at Notebook as source of truth.
+- Reads on Kindle, keeps additional context in OneNote, and revisits both before decisions.
+- Wants: "What have I read or noted about *X*?" before journaling, prep, or decisions.
+- Expects citations tied to source context: book/location for Kindle and section/page for OneNote.
+- Accepts a practical ingestion path for Kindle today (capture/export to structured file), while OneNote can be synced from selected sections in Setup.
 
 ### Scenarios (as shipped + near term)
 
-| # | Scenario | Today (MVP) | Intent (spec / later) |
-|---|----------|-------------|------------------------|
-| 1 | **Get reading into the app** | Produce **`corpus.jsonl`** via WebView spike + `parse_dump` ([§4](#4-corpus-install-and-first-run)). | Background sync from Notebook when a supported automation path is validated (ToS / engineering). |
-| 2 | **Topic query** | User asks in Knode; **retrieve** top passages from local index; **Gemini** `generateContent` with citations. | Same flow; richer **cross-book** narrative when clustering improves. |
-| 3 | **Browse by book** | Supported at data level in JSONL; full Notebook-parity UI is backlog. | Notebook-aligned browse + “jump to related highlights.” |
-| 4 | **Refresh corpus** | Re-run capture + parse when you add highlights; **rebuild index** in app. | Append + dedupe incremental sync. |
+| # | Scenario | Today (MVP) | Intent (later) |
+|---|----------|-------------|----------------|
+| 1 | **Get sources into the app** | Kindle: produce **`corpus.jsonl`** via capture + `parse_dump`. OneNote: connect account, pick sections, sync pages during Build index. | Less manual Kindle ingestion and broader connector coverage. |
+| 2 | **Topic query** | User asks in Knode; retrieve top passages from local index; Gemini `generateContent` with citations. | Richer cross-source synthesis and stronger thematic grouping. |
+| 3 | **Connect Kindle and notes** | Retrieval can return Kindle and OneNote passages in one answer flow with citations. | Better UI affordances for browsing links between passages. |
+| 4 | **Refresh data** | Kindle: rerun capture + parse when highlights change. OneNote: re-sync selected sections on Build index. | More incremental refresh and lower-latency updates. |
 
 ### Functional requirements (MVP: implemented vs gap)
 
@@ -49,7 +49,7 @@ Highlights in [Kindle Notebook](https://read.amazon.com/notebook) are organized 
 | F2b | **Optional OneNote source** with section selection | **Done** (Graph sync in Setup; page-level records merged into local index). |
 | F3 | **Citation-first** answers | **Done** (prompt + sources panel). |
 | F4 | **Local-first** data; clear **privacy** story for corpus/connectors | **Done** (local index + OneNote local artifacts); see security doc for API traffic and local files. |
-| F5 | **Amazon “connector”** via documented Notebook API | **Not available** publicly; **workaround** in [§4](#4-corpus-install-and-first-run). |
+| F5 | **Amazon "connector"** via documented Notebook API | **Not available** publicly; MVP relies on user-mediated Kindle export/capture to JSONL. |
 | F6 | **Installer / desktop** distribution | **Done** (Inno Setup + `build-installer.ps1`). |
 
 ### Non-goals (unchanged)
@@ -72,34 +72,33 @@ Highlights in [Kindle Notebook](https://read.amazon.com/notebook) are organized 
 
 ### What we wanted (official)
 
-Programmatic, documented access to the **same** highlights the user sees in **Kindle Notebook**, ideally **OAuth + REST** (clear ToS, rate limits).
+Programmatic, documented access to the same user-owned material from Kindle and OneNote, with clear auth and predictable sync boundaries.
 
 ### What we verified
 
 - No published **Kindle Notebook API** for third-party highlight export.
-- [Login with Amazon](https://developer.amazon.com/docs/login-with-amazon/documentation-overview.html) is **identity**, not Notebook payloads.
-- [Amazon Data Portability](https://developer.amazon.com/docs/amazon-data-portability/overview.html) **Kindle-related** scopes are **not** “export all Notebook highlight text” as of our review.
+- [Login with Amazon](https://developer.amazon.com/docs/login-with-amazon/documentation-overview.html) is identity, not Notebook payload access.
+- [Amazon Data Portability](https://developer.amazon.com/docs/amazon-data-portability/overview.html) Kindle-related scopes are not "export all Notebook highlight text" as of our review.
+- OneNote is feasible via Microsoft Graph with delegated scope **`Notes.Read`**, account sign-in through MSAL, and user-selected section sync.
 
-**Conclusion:** MVP must use **user-mediated or session-based** extraction, with **legal/ToS** review before any broad release.
+**Conclusion:** MVP uses two ingestion designs: Kindle through user-mediated export/capture to JSONL, and OneNote through Graph sync of selected sections.
 
 ### Options considered (abbreviated)
 
-| Option | Idea | Why not primary |
-|--------|------|-----------------|
-| **A** Browser extension | Readwise-style; session on `read.amazon.com`. | Two deliverables + store review for v0. |
-| **B** Embedded WebView | Session inside desktop app; capture text. | **Chosen for spike:** one artifact, same session model as extension. |
-| **C** Playwright / Selenium | Automate browser. | Heavy, fragile, worse UX for most users. |
-| **D** Email parsing | Digests from Amazon. | Incomplete coverage. |
-| **E** File-only (`My Clippings.txt`, etc.) | No live Amazon interaction. | **Fallback / dev-friendly**; weaker “always fresh” story. |
-| **F** Third-party API (e.g. Readwise) | Delegate ingestion. | Vendor lock-in; may conflict with local-corpus story. |
+| Source | Option | Decision |
+|--------|--------|----------|
+| Kindle | Browser/WebView/session capture + parse to JSONL | Chosen for MVP because no public Notebook API exists. |
+| Kindle | Fully documented API connector | Not available now. |
+| OneNote | MSAL auth + Graph Notes.Read + section picker | Chosen and shipped in Setup flow. |
+| OneNote | Pull everything by default | Rejected; user must pick sections to keep control and scope. |
 
 ### Chosen path (MVP)
 
-1. **Spike:** **Option B**: **WebView2** (`spike/webview-notebook`) to prove **login + readable capture** from Notebook.
-2. **Normalize:** **Dedupe** captures → **`parse_dump`** → **`corpus.jsonl`** (deterministic, no DOM at query time).
-3. **Ship:** **Knode** reads JSONL, **embeds** with **Gemini**, stores vectors under `%LocalAppData%\Knode\index\`, **answers** with **Gemini** chat.
+1. **Kindle path:** capture/export + dedupe + `parse_dump` to produce `corpus.jsonl`.
+2. **OneNote path:** sign in with MSAL, choose sections, sync page text via Graph during Build index.
+3. **Unified index:** merge both source rows into the same local vector index and answer through one Ask flow.
 
-**Reasoning:** Single installer story, offline replay of parsing from text, and **no** dependency on Amazon DOM at RAG time, only at export time. Extension remains the **upgrade** if WebView login grows painful.
+**Reasoning:** this keeps user control explicit, keeps Ask local-first, and avoids live connector calls per question.
 
 ---
 
@@ -110,39 +109,17 @@ Programmatic, documented access to the **same** highlights the user sees in **Ki
 ### Layered view (static summary)
 
 | Layer | Responsibility | Technologies |
-|--------|----------------|--------------|
-| **Presentation** | Browse corpus path, build index, ask question, show answer + sources | **WPF**, .NET 8 |
-| **Application** | Orchestrate **embed batch**, **query embed**, **Top-K** retrieval, **RAG prompt**, config | **C#** in `dotnet/Knode` |
-| **Local data** | **`corpus.jsonl`**, persisted **embeddings** (`vectors.bin`, `manifest.json`, `records.json`), optional **DPAPI** key blob | File I/O, local app data |
-| **External AI** | Text embeddings + chat | **Google Gemini** (`gemini-embedding-001`, configurable chat model e.g. `gemini-2.5-flash`) |
+|-------|----------------|-------------|
+| **Presentation** | Setup corpus path, connect OneNote, pick sections, build index, ask, show answer + sources | WPF, .NET 8 |
+| **Application** | Build/sync orchestration, embed batching, Top-K retrieval, RAG prompt assembly, cancellation | C# in `dotnet/Knode` |
+| **Local data** | `corpus.jsonl`, OneNote snapshots, persisted embeddings (`vectors.bin`, `manifest.json`, `records.json`), optional DPAPI key blob | File I/O, local app data |
+| **External APIs** | Embeddings/chat for answer flow; OneNote sync during setup/index | Google Gemini, Microsoft Graph via MSAL |
 
-**Optional Python path (prototyping):** same **`corpus.jsonl`** → **ChromaDB** + **sentence-transformers** + **`query_cli`**; **OpenAI** optional for synthesis only. See [`mvp/README.md`](../mvp/README.md).
-
----
-
-## 4. Corpus, install, and first run
-
-**You need a local `corpus.jsonl`** (one JSON object per line). It is **not** in git and **not** bundled in installers. Without a public Kindle Notebook API, a **dev or power-user** pipeline produces the JSONL contract the app expects.
-
-**Typical pipeline (this repo):**
-
-1. **WebView spike:** [`spike/webview-notebook/README.md`](../spike/webview-notebook/README.md) (Notebook login, per-book capture to `spike_extract.txt`).
-2. **Dedupe:** `dedupe_spike_extract.py` → `spike_extract_deduped.txt`.
-3. **Parse / validate:** from **`mvp/`**, run **`parse_dump`** and **`validate_corpus`** (see [`mvp/README.md`](../mvp/README.md)). Output: **`mvp/data/corpus.jsonl`**. **`validate_corpus`** exits **0** only when every row has a non-empty **`book_title`**; fix **`author`** gaps for best citations before indexing.
-4. **In Knode:** browse to the JSONL, **Build index**; after corpus changes, use **Force full re-embed** if highlight **ids** shifted (see `parse_dump` and title hashing).
-
-**Fallback:** Any tool that emits the **same JSONL shape** works; `My Clippings.txt` is valid **if** you convert to that shape.
-
-**Runbooks (read in this order):**
-
-1. **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)**. Installer, prerequisites (.NET 8 Desktop Runtime, WebView2), SmartScreen.
-2. **[`KNODE-FIRST-RUN.md`](KNODE-FIRST-RUN.md)**. Corpus path, API key, Build index, first Ask, troubleshooting.
-
-**Also useful:** security and keys [`SECURITY-AND-RELEASES.md`](SECURITY-AND-RELEASES.md); engineer-oriented tiers [`KNODE-ARCHITECTURE.md`](KNODE-ARCHITECTURE.md); diary [`JOURNEY.md`](JOURNEY.md). Product vision and future sources: [§5](#5-vision-and-future-sources).
+**Boundary reminder:** OneNote Graph calls happen at connect/section-pick/build-index time. Routine Ask reads the local index only.
 
 ---
 
-## 5. Vision and future sources
+## 4. Vision and future sources
 
 This section is the **public** north star. It stays high level so contributors and readers share the same direction without publishing private details.
 
@@ -163,7 +140,7 @@ Technical building blocks for engineers stay in [§3](#3-architecture-layers-dat
 
 ### Private scenario notes (local only, not for GitHub)
 
-Rich vignettes (real names, employers, trips, or exploratory copy) belong in a **local-only** markdown file, for example **`docs/VISION-SCENARIOS.local.md`**, and should **not** be committed. Filenames ending in **`.local.md`** are **gitignored** at repo root so you can iterate privately; keep the **canonical guide** to sanitized bullets here in §5.
+Rich vignettes (real names, employers, trips, or exploratory copy) belong in a **local-only** markdown file, for example **`docs/VISION-SCENARIOS.local.md`**, and should **not** be committed. Filenames ending in **`.local.md`** are **gitignored** at repo root so you can iterate privately; keep the **canonical guide** to sanitized bullets here in §4.
 
 ---
 
@@ -171,6 +148,7 @@ Rich vignettes (real names, employers, trips, or exploratory copy) belong in a *
 
 | Date | Change |
 |------|--------|
+| 2026-04-22 | Updated persona/scenarios/design text to explicitly include shipped OneNote connector and cross-source retrieval; removed corpus runbook section from this guide and kept detailed setup in install/first-run docs. |
 | 2026-04-21 | Updated product framing from Kindle-only to Kindle + optional OneNote sections; added functional requirement row for OneNote source and privacy wording update. |
 | 2026-04-09 | Story-style intro; §5 vision + public scenario themes; private **`*.local.md`** scenario notes + gitignore. |
 | 2026-04-08 | Agentic product framing up front; §4 is corpus summary + INSTALL → FIRST-RUN order; long install/corpus runbooks moved to dedicated docs; em dash cleanup in this file. |

@@ -1,4 +1,4 @@
-# Knode architecture: detailed design
+﻿# Knode architecture: detailed design
 
 **Audience:** software engineers and architects reviewing **Knode** (`dotnet/Knode`), its **vector retrieval** layer, and the optional **Python / Chroma** path. For product intent and personas, see [KNODE-MVP-GUIDE.md](KNODE-MVP-GUIDE.md).
 
@@ -32,20 +32,20 @@ Both paths consume the **same** **`corpus.jsonl`** **contract** (one JSON per li
 
 ## System context (tiers and data flow)
 
-**0 — Ingestion (offline or dev)**  
+**0 - Ingestion (offline or dev)**  
 Kindle Notebook (web) → WebView2 spike capture → optional dedupe script → `parse_dump` (Python) → **`corpus.jsonl`**.  
 Optional OneNote source: setup auth + selected sections → Graph page sync → local OneNote snapshot rows.
 
-**1 — Presentation (WPF)**  
+**1 - Presentation (WPF)**  
 **Knode** `MainWindow`: **Ask**, **Setup**, **Help**; navigation and WebView-backed answer/sources.
 
-**2 — Application (C#)**  
+**2 - Application (C#)**  
 Orchestration: config, corpus hash, optional DPAPI for keys. **Build index:** read JSONL + optional OneNote rows, reuse unchanged vectors by `id` + `embed_content_hash`, batch-embed changed/new rows via Gemini, load **`VectorIndex`**, persist via **`PersistentIndexStore`**. **Load index** from disk when corpus hash/signature and model match manifest. **Ask:** embed question, apply **BookScope** / **YearScope**, **Top-K** cosine search, assemble RAG prompt, send **`generateContent`**, render answer and sources.
 
-**3 — Local persistence**  
+**3 - Local persistence**  
 Knode **`index/`** folder (`vectors.bin`, `manifest`, `records`); optional DPAPI key blob; `user_settings.json` for paths and UI prefs; OneNote local artifacts (`onenote_settings.json`, `onenote_records.json`, MSAL token cache file).
 
-**4 — External HTTPS**  
+**4 - External HTTPS**  
 Google Gemini embedding API and `generateContent` (configurable base URL); Microsoft Graph OneNote APIs during section sync/build.
 
 Edges in short: **`corpus.jsonl`** and selected OneNote pages feed the orchestrator; orchestrator builds or loads the index; embeddings and answer generation use Gemini; Graph is used during OneNote sync/build, not normal Ask retrieval.
@@ -59,7 +59,7 @@ Edges in short: **`corpus.jsonl`** and selected OneNote pages feed the orchestra
 ```mermaid
 flowchart TB
   %% Tier 0: Ingestion
-  subgraph T0["Tier 0 — Ingestion (offline/dev and source connectors)"]
+  subgraph T0["Tier 0 - Ingestion (offline/dev and source connectors)"]
     KNB["Kindle Notebook web"]
     CAP["WebView spike capture"]
     DEDUPE["dedupe_spike_extract.py (optional)"]
@@ -71,14 +71,14 @@ flowchart TB
   end
 
   %% Tier 1: Presentation
-  subgraph T1["Tier 1 — Presentation (WPF)"]
+  subgraph T1["Tier 1 - Presentation (WPF)"]
     UI["MainWindow (Ask / Setup / Help)"]
     PICKER["OneNote section picker"]
     WEBVIEW["Answer + Sources WebView2"]
   end
 
   %% Tier 2: Application orchestration
-  subgraph T2["Tier 2 — Application (C# orchestration + RAG)"]
+  subgraph T2["Tier 2 - Application (C# orchestration + RAG)"]
     ORCH["BuildIndex_Click / Ask_Click"]
     ONSYNC["BuildOneNoteRecordsAsync"]
     RAG["KnodeRagService"]
@@ -88,7 +88,7 @@ flowchart TB
   end
 
   %% Tier 3: Local persistence
-  subgraph T3["Tier 3 — Local persistence"]
+  subgraph T3["Tier 3 - Local persistence"]
     INDEX["index/ (manifest.json, records.json, vectors.bin)"]
     ONSET["onenote_settings.json (selected sections, sync state)"]
     ONSNAP["onenote_records.json (OneNote snapshot rows)"]
@@ -97,7 +97,7 @@ flowchart TB
   end
 
   %% Tier 4: External APIs
-  subgraph T4["Tier 4 — External HTTPS APIs"]
+  subgraph T4["Tier 4 - External HTTPS APIs"]
     GEMEMB["Gemini embeddings API"]
     GEMGEN["Gemini generateContent API"]
   end

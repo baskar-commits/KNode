@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Knode architecture: detailed design | Knode docs</title>
+  <title>Documentation | Knode docs</title>
   <link rel="stylesheet" href="assets/docs-html.css" />
 
   <style>
@@ -21,7 +21,7 @@
 <body>
   <article class="doc">
     <a class="back" href="index.html">← Documentation hub</a>
-    <h1>Knode architecture: detailed design</h1>
+    <p>﻿# Knode architecture: detailed design</p>
 <p><strong>Audience:</strong> software engineers and architects reviewing <strong>Knode</strong> (<code>dotnet/Knode</code>), its <strong>vector retrieval</strong> layer, and the optional <strong>Python / Chroma</strong> path. For product intent and personas, see <a href="KNODE-MVP-GUIDE.html">KNODE-MVP-GUIDE.md</a>.</p>
 <h2>Read this first (2-minute map)</h2>
 <ul>
@@ -63,16 +63,16 @@
 <p>Both paths consume the <strong>same</strong> <strong><code>corpus.jsonl</code></strong> <strong>contract</strong> (one JSON per line, <code>HighlightRecord</code> shape in C#). <strong>Knode does not embed Chroma</strong> in the shipping EXE; if you hear “vector DB” for Knode, it refers to the <strong>Gemini-backed vector index</strong> files above, <strong>unless</strong> you are explicitly on the <strong>Python Chroma</strong> track.</p>
 <hr />
 <h2>System context (tiers and data flow)</h2>
-<p><strong>0 — Ingestion (offline or dev)</strong><br />
+<p><strong>0 - Ingestion (offline or dev)</strong><br />
 Kindle Notebook (web) → WebView2 spike capture → optional dedupe script → <code>parse_dump</code> (Python) → <strong><code>corpus.jsonl</code></strong>.<br />
 Optional OneNote source: setup auth + selected sections → Graph page sync → local OneNote snapshot rows.</p>
-<p><strong>1 — Presentation (WPF)</strong><br />
+<p><strong>1 - Presentation (WPF)</strong><br />
 <strong>Knode</strong> <code>MainWindow</code>: <strong>Ask</strong>, <strong>Setup</strong>, <strong>Help</strong>; navigation and WebView-backed answer/sources.</p>
-<p><strong>2 — Application (C#)</strong><br />
+<p><strong>2 - Application (C#)</strong><br />
 Orchestration: config, corpus hash, optional DPAPI for keys. <strong>Build index:</strong> read JSONL + optional OneNote rows, reuse unchanged vectors by <code>id</code> + <code>embed_content_hash</code>, batch-embed changed/new rows via Gemini, load <strong><code>VectorIndex</code></strong>, persist via <strong><code>PersistentIndexStore</code></strong>. <strong>Load index</strong> from disk when corpus hash/signature and model match manifest. <strong>Ask:</strong> embed question, apply <strong>BookScope</strong> / <strong>YearScope</strong>, <strong>Top-K</strong> cosine search, assemble RAG prompt, send <strong><code>generateContent</code></strong>, render answer and sources.</p>
-<p><strong>3 — Local persistence</strong><br />
+<p><strong>3 - Local persistence</strong><br />
 Knode <strong><code>index/</code></strong> folder (<code>vectors.bin</code>, <code>manifest</code>, <code>records</code>); optional DPAPI key blob; <code>user_settings.json</code> for paths and UI prefs; OneNote local artifacts (<code>onenote_settings.json</code>, <code>onenote_records.json</code>, MSAL token cache file).</p>
-<p><strong>4 — External HTTPS</strong><br />
+<p><strong>4 - External HTTPS</strong><br />
 Google Gemini embedding API and <code>generateContent</code> (configurable base URL); Microsoft Graph OneNote APIs during section sync/build.</p>
 <p>Edges in short: <strong><code>corpus.jsonl</code></strong> and selected OneNote pages feed the orchestrator; orchestrator builds or loads the index; embeddings and answer generation use Gemini; Graph is used during OneNote sync/build, not normal Ask retrieval.</p>
 <hr />
@@ -83,7 +83,7 @@ Google Gemini embedding API and <code>generateContent</code> (configurable base 
 <div class="mermaid">
 flowchart TB
   %% Tier 0: Ingestion
-  subgraph T0["Tier 0 — Ingestion (offline/dev and source connectors)"]
+  subgraph T0["Tier 0 - Ingestion (offline/dev and source connectors)"]
     KNB["Kindle Notebook web"]
     CAP["WebView spike capture"]
     DEDUPE["dedupe_spike_extract.py (optional)"]
@@ -95,14 +95,14 @@ flowchart TB
   end
 
   %% Tier 1: Presentation
-  subgraph T1["Tier 1 — Presentation (WPF)"]
+  subgraph T1["Tier 1 - Presentation (WPF)"]
     UI["MainWindow (Ask / Setup / Help)"]
     PICKER["OneNote section picker"]
     WEBVIEW["Answer + Sources WebView2"]
   end
 
   %% Tier 2: Application orchestration
-  subgraph T2["Tier 2 — Application (C# orchestration + RAG)"]
+  subgraph T2["Tier 2 - Application (C# orchestration + RAG)"]
     ORCH["BuildIndex_Click / Ask_Click"]
     ONSYNC["BuildOneNoteRecordsAsync"]
     RAG["KnodeRagService"]
@@ -112,7 +112,7 @@ flowchart TB
   end
 
   %% Tier 3: Local persistence
-  subgraph T3["Tier 3 — Local persistence"]
+  subgraph T3["Tier 3 - Local persistence"]
     INDEX["index/ (manifest.json, records.json, vectors.bin)"]
     ONSET["onenote_settings.json (selected sections, sync state)"]
     ONSNAP["onenote_records.json (OneNote snapshot rows)"]
@@ -121,7 +121,7 @@ flowchart TB
   end
 
   %% Tier 4: External APIs
-  subgraph T4["Tier 4 — External HTTPS APIs"]
+  subgraph T4["Tier 4 - External HTTPS APIs"]
     GEMEMB["Gemini embeddings API"]
     GEMGEN["Gemini generateContent API"]
   end

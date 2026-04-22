@@ -1,8 +1,8 @@
-# Install Knode (Windows)
+﻿# Install Knode (Windows)
 
 **Who this is for:** people installing the shipped **Inno Setup** installer (`KnodeSetup-*.exe`), for example from a **GitHub Release**.
 
-**Developers** building from source: see [KNODE-MVP-GUIDE.md](KNODE-MVP-GUIDE.md) §4; open `dotnet/Knode/Knode.csproj` in Visual Studio or run `dotnet build` / `dotnet run` from `dotnet/Knode/`.
+**Developers** building from source: see [KNODE-FIRST-RUN.md](KNODE-FIRST-RUN.md) and [`mvp/README.md`](../mvp/README.md); open `dotnet/Knode/Knode.csproj` in Visual Studio or run `dotnet build` / `dotnet run` from `dotnet/Knode/`.
 
 ---
 
@@ -31,7 +31,7 @@ Knode can **merge selected OneNote sections** into the same local index as your 
    - **Supported account types:** include **personal Microsoft accounts** (Knode uses the “common” / work-or-personal audience).
    - **Redirect URI:** **Public client / native** → **`http://localhost`** (must match what the app uses).
    - **API permissions:** add **Microsoft Graph** delegated **`Notes.Read`** (and allow the sign-in flow to include **`offline_access`** for refresh).
-2. Copy the application **(client) ID** and put it in **`appsettings.Local.json`** next to **`Knode.exe`** (same folder as the installed app, or next to the project when developing). Use the **`Knode:OneNote:ClientId`** setting — see tracked **`dotnet/Knode/appsettings.json`** for the shape. **`appsettings.Local.json` is gitignored**; do not paste the client ID into files you commit.
+2. Copy the application **(client) ID** and put it in **`appsettings.Local.json`** next to **`Knode.exe`** (same folder as the installed app, or next to the project when developing). Use the **`Knode:OneNote:ClientId`** setting - see tracked **`dotnet/Knode/appsettings.json`** for the shape. **`appsettings.Local.json` is gitignored**; do not paste the client ID into files you commit.
 3. In the app, open **Setup · Corpus & index**, use **Connect OneNote** / **Select OneNote sections**, then **Build index** so Graph sync runs.
 
 Local snapshot files, token cache, and keys: **[SECURITY-AND-RELEASES.md](SECURITY-AND-RELEASES.md)** (OneNote section).

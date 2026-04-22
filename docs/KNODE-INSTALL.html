@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Install Knode (Windows) | Knode docs</title>
+  <title>Documentation | Knode docs</title>
   <link rel="stylesheet" href="assets/docs-html.css" />
 
 </head>
 <body>
   <article class="doc">
     <a class="back" href="index.html">← Documentation hub</a>
-    <h1>Install Knode (Windows)</h1>
+    <p>﻿# Install Knode (Windows)</p>
 <p><strong>Who this is for:</strong> people installing the shipped <strong>Inno Setup</strong> installer (<code>KnodeSetup-*.exe</code>), for example from a <strong>GitHub Release</strong>.</p>
-<p><strong>Developers</strong> building from source: see <a href="KNODE-MVP-GUIDE.html">KNODE-MVP-GUIDE.md</a> §4; open <code>dotnet/Knode/Knode.csproj</code> in Visual Studio or run <code>dotnet build</code> / <code>dotnet run</code> from <code>dotnet/Knode/</code>.</p>
+<p><strong>Developers</strong> building from source: see <a href="KNODE-FIRST-RUN.html">KNODE-FIRST-RUN.md</a> and <a href="https://github.com/baskar-commits/KNode/blob/main/mvp/README.md"><code>mvp/README.md</code></a>; open <code>dotnet/Knode/Knode.csproj</code> in Visual Studio or run <code>dotnet build</code> / <code>dotnet run</code> from <code>dotnet/Knode/</code>.</p>
 <hr />
 <h2>Supported environment</h2>
 <table>
@@ -49,7 +49,7 @@
    - <strong>Supported account types:</strong> include <strong>personal Microsoft accounts</strong> (Knode uses the “common” / work-or-personal audience).<br />
    - <strong>Redirect URI:</strong> <strong>Public client / native</strong> → <strong><code>http://localhost</code></strong> (must match what the app uses).<br />
    - <strong>API permissions:</strong> add <strong>Microsoft Graph</strong> delegated <strong><code>Notes.Read</code></strong> (and allow the sign-in flow to include <strong><code>offline_access</code></strong> for refresh).</li>
-<li>Copy the application <strong>(client) ID</strong> and put it in <strong><code>appsettings.Local.json</code></strong> next to <strong><code>Knode.exe</code></strong> (same folder as the installed app, or next to the project when developing). Use the <strong><code>Knode:OneNote:ClientId</code></strong> setting — see tracked <strong><code>dotnet/Knode/appsettings.json</code></strong> for the shape. <strong><code>appsettings.Local.json</code> is gitignored</strong>; do not paste the client ID into files you commit.</li>
+<li>Copy the application <strong>(client) ID</strong> and put it in <strong><code>appsettings.Local.json</code></strong> next to <strong><code>Knode.exe</code></strong> (same folder as the installed app, or next to the project when developing). Use the <strong><code>Knode:OneNote:ClientId</code></strong> setting - see tracked <strong><code>dotnet/Knode/appsettings.json</code></strong> for the shape. <strong><code>appsettings.Local.json</code> is gitignored</strong>; do not paste the client ID into files you commit.</li>
 <li>In the app, open <strong>Setup · Corpus &amp; index</strong>, use <strong>Connect OneNote</strong> / <strong>Select OneNote sections</strong>, then <strong>Build index</strong> so Graph sync runs.</li>
 </ol>
 <p>Local snapshot files, token cache, and keys: <strong><a href="https://github.com/baskar-commits/KNode/blob/main/docs/SECURITY-AND-RELEASES.md">SECURITY-AND-RELEASES.md</a></strong> (OneNote section).</p>

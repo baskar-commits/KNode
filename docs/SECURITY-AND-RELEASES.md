@@ -1,12 +1,12 @@
-# Security and releases: Knode / KindleNotesAgent
+﻿# Security and releases: Knode / KindleNotesAgent
 
 This document is the **maintainer path** from local changes to a **GitHub Release** asset (`KnodeSetup-x.y.z.exe`), plus the **minimum security rules** you must not violate.
 
 **How to read it**
 
-- Follow **Phases 1–6** in order.
+- Follow **Phases 1-6** in order.
 - Each phase ends with **“Details”** pointing to an appendix with copy-paste commands and footguns.
-- If you only need commands, jump to **[Appendix A — Commands (copy/paste)](#appendix-a-commands)**.
+- If you only need commands, jump to **[Appendix A - Commands (copy/paste)](#appendix-a-commands)**.
 
 **Repository root** is the folder that contains **`dotnet\`**, **`docs\`**, **`scripts\`**, and **`.github\`**. Unless a command says otherwise, open PowerShell **here**.
 
@@ -25,7 +25,7 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 
 ---
 
-<h2 id="phase-1-dependency-audit">Phase 1 — Dependency audit</h2>
+<h2 id="phase-1-dependency-audit">Phase 1 - Dependency audit</h2>
 
 **Do**
 
@@ -35,13 +35,13 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 **Done when**
 
 - NuGet vulnerability scan is clean (or you have a documented exception you accept for this release).
-- Python lockfile audits are clean (this repo documents one known ignore path for `mvp/` — see [Appendix C](#appendix-c-python-cve)).
+- Python lockfile audits are clean (this repo documents one known ignore path for `mvp/` - see [Appendix C](#appendix-c-python-cve)).
 
-**Details:** [Appendix A — Commands](#appendix-a-commands) · [Appendix C](#appendix-c-python-cve)
+**Details:** [Appendix A - Commands](#appendix-a-commands) · [Appendix C](#appendix-c-python-cve)
 
 ---
 
-<h2 id="phase-2-version-bump--sync-checkpoint">Phase 2 — Version bump + sync checkpoint</h2>
+<h2 id="phase-2-version-bump--sync-checkpoint">Phase 2 - Version bump + sync checkpoint</h2>
 
 **Source of truth**
 
@@ -52,13 +52,13 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 
 1. Set `X.Y.Z` in **both** files.
 2. Confirm both read the **same** `X.Y.Z`.
-3. Only after Phase 5 push does GitHub “know” the new version — **local builds do not update GitHub by themselves**.
+3. Only after Phase 5 push does GitHub “know” the new version - **local builds do not update GitHub by themselves**.
 
-**Details:** [Appendix A — Commands](#appendix-a-commands)
+**Details:** [Appendix A - Commands](#appendix-a-commands)
 
 ---
 
-<h2 id="phase-3-build--package">Phase 3 — Build + package</h2>
+<h2 id="phase-3-build--package">Phase 3 - Build + package</h2>
 
 **Do**
 
@@ -70,11 +70,11 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 - Release build succeeds.
 - If packaging succeeded: `dotnet\dist-installer\KnodeSetup-X.Y.Z.exe` exists.
 
-**Details:** [Appendix A — Commands](#appendix-a-commands) (includes **repo root vs `dotnet\` folder** path rules)
+**Details:** [Appendix A - Commands](#appendix-a-commands) (includes **repo root vs `dotnet\` folder** path rules)
 
 ---
 
-<h2 id="phase-4-smoke-test">Phase 4 — Smoke test</h2>
+<h2 id="phase-4-smoke-test">Phase 4 - Smoke test</h2>
 
 **Do**
 
@@ -85,16 +85,16 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 
 - No startup crash, key/index flows work, and you are willing to put your name on the release.
 
-**Details:** [Appendix A — Commands](#appendix-a-commands)
+**Details:** [Appendix A - Commands](#appendix-a-commands)
 
 ---
 
-<h2 id="phase-5-commit--push-main">Phase 5 — Commit + push `main`</h2>
+<h2 id="phase-5-commit--push-main">Phase 5 - Commit + push `main`</h2>
 
 **Do**
 
-- **Documentation (if this release touched docs):** Regenerate **`docs/KNODE-*.html`** from Markdown when you changed the matching **`docs/KNODE-*.md`** (see [Appendix A9](#appendix-a9-docs)). Commit **`.md` + generated `.html` together** so **GitHub Pages** (`/docs` on `main`) matches the repo. Hand-maintained pages such as **`docs/index.html`** and **`docs/DESIGN.html`** ship as-is—include them in the same commit when you update them.
-- `git status` / `git diff` — confirm **no secrets** and **no build outputs** are staged (see [Appendix A9](#appendix-a9-docs) for suggested commands).
+- **Documentation (if this release touched docs):** Regenerate **`docs/KNODE-*.html`** from Markdown when you changed the matching **`docs/KNODE-*.md`** (see [Appendix A9](#appendix-a9-docs)). Commit **`.md` + generated `.html` together** so **GitHub Pages** (`/docs` on `main`) matches the repo. Hand-maintained pages such as **`docs/index.html`** also ship as-is, so include them in the same commit when you update them.
+- `git status` / `git diff` - confirm **no secrets** and **no build outputs** are staged (see [Appendix A9](#appendix-a9-docs) for suggested commands).
 - Commit with a message that states what shipped (features + version bump + doc changes if any).
 - `git push origin main`
 
@@ -102,18 +102,18 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 
 - **`git push`** prints **no error** and usually ends with a line like **`main -> main`** (your local **`main`** advanced **`origin/main`** on GitHub).
 - After push: **`git fetch origin`** then **`git status`** shows **Your branch is up to date with `origin/main`** (and a **clean** tree if you have nothing left uncommitted).
-- **Optional double-check:** **`git rev-parse HEAD`** and **`git rev-parse origin/main`** print the **same** SHA — that is the commit GitHub’s **`main`** points at.
+- **Optional double-check:** **`git rev-parse HEAD`** and **`git rev-parse origin/main`** print the **same** SHA - that is the commit GitHub’s **`main`** points at.
 
 **Never commit**
 
 - Real API keys, tokens, or private corpora (`corpus.jsonl`).
 - Connector secrets in tracked files when they should live in `appsettings.Local.json` (gitignored).
 
-**Details:** [Appendix A9 — Documentation sync](#appendix-a9-docs) · [Appendix A7 — Commit + push](#appendix-a7-commit-push) · [Appendix D — Secret hygiene + local data](#appendix-d-secrets)
+**Details:** [Appendix A9 - Documentation sync](#appendix-a9-docs) · [Appendix A7 - Commit + push](#appendix-a7-commit-push) · [Appendix D - Secret hygiene + local data](#appendix-d-secrets)
 
 ---
 
-<h2 id="phase-6-tag--github-release">Phase 6 — Tag → GitHub Release</h2>
+<h2 id="phase-6-tag--github-release">Phase 6 - Tag → GitHub Release</h2>
 
 **Do**
 
@@ -124,11 +124,11 @@ This document is the **maintainer path** from local changes to a **GitHub Releas
 
 - `Push-KnodeReleaseTag.ps1` reads `<Version>` from the **already pushed** `Knode.csproj` and checks `Knode.iss` matches.
 
-**Details:** [Appendix A8 — Tag](#appendix-a8-tag) · [Appendix B — CI + download location](#appendix-b-github-ci)
+**Details:** [Appendix A8 - Tag](#appendix-a8-tag) · [Appendix B - CI + download location](#appendix-b-github-ci)
 
 ---
 
-<h2 id="appendix-a-commands">Appendix A — Commands (copy/paste)</h2>
+<h2 id="appendix-a-commands">Appendix A - Commands (copy/paste)</h2>
 
 ### A.1 Dependency audit
 
@@ -231,7 +231,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Push-KnodeReleaseTag.ps1
 
 **When:** You changed **`docs/KNODE-MVP-GUIDE.md`**, **`KNODE-INSTALL.md`**, **`KNODE-FIRST-RUN.md`**, or **`KNODE-ARCHITECTURE.md`**, or you want published **`KNODE-*.html`** on Pages to match **`main`**.
 
-**Step 1 — Review (no writes)**
+**Step 1 - Review (no writes)**
 
 ```powershell
 cd C:\path\to\KindleNotesAgent
@@ -251,7 +251,7 @@ git status
 git diff --stat docs/
 ```
 
-**Step 2 — Commit + push** (example: doc-only follow-up after a feature release):
+**Step 2 - Commit + push** (example: doc-only follow-up after a feature release):
 
 ```powershell
 cd C:\path\to\KindleNotesAgent
@@ -262,11 +262,11 @@ git push origin main
 
 Then run the **same “Verify GitHub has the same commit”** block as under **[A.7](#appendix-a7-commit-push)** (`git fetch origin`, `git status`, matching **`HEAD`** and **`origin/main`**).
 
-Adjust paths if you only changed a subset; **`git add docs/`** is usual for doc waves that include **`docs/index.html`** and **`docs/DESIGN.html`**.
+Adjust paths if you only changed a subset; **`git add docs/`** is usual for doc waves that include **`docs/index.html`**.
 
 ---
 
-<h2 id="appendix-b-github-ci">Appendix B — GitHub CI + where users download</h2>
+<h2 id="appendix-b-github-ci">Appendix B - GitHub CI + where users download</h2>
 
 ### CI: **Knode installer** workflow
 
@@ -284,7 +284,7 @@ Product copy also points here: **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)**.
 
 ---
 
-<h2 id="appendix-c-python-cve">Appendix C — Python CVE context (maintainers)</h2>
+<h2 id="appendix-c-python-cve">Appendix C - Python CVE context (maintainers)</h2>
 
 ### `transformers` / `sentence-transformers` (CVE context)
 
@@ -292,7 +292,7 @@ Product copy also points here: **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)**.
 
 ### GitHub Actions: security audit
 
-**`.github/workflows/security-audit.yml`** runs on **push** and **pull_request** (**.NET** vulnerable packages + **`pip-audit`** on the same lockfiles). It may **ignore** a specific CVE on **`pip-audit`** until **`transformers` 5+** is compatible — see the workflow file; remove the ignore when fixed.
+**`.github/workflows/security-audit.yml`** runs on **push** and **pull_request** (**.NET** vulnerable packages + **`pip-audit`** on the same lockfiles). It may **ignore** a specific CVE on **`pip-audit`** until **`transformers` 5+** is compatible - see the workflow file; remove the ignore when fixed.
 
 ### Python lockfile (`mvp/`)
 
@@ -317,7 +317,7 @@ dotnet list Knode.sln package --outdated
 
 ---
 
-<h2 id="appendix-d-secrets">Appendix D — Secret hygiene + local data</h2>
+<h2 id="appendix-d-secrets">Appendix D - Secret hygiene + local data</h2>
 
 ### API keys and GitHub
 
@@ -333,7 +333,7 @@ dotnet list Knode.sln package --outdated
 
 ### Corpus data
 
-- **`corpus.jsonl`** is **private** reading data; it is **not** in the repo. See **[initial setup](KNODE-MVP-GUIDE.md#4-corpus-install-and-first-run)**.
+- **`corpus.jsonl`** is **private** reading data; it is **not** in the repo. See **[first run](KNODE-FIRST-RUN.md)** and **[`mvp/README.md`](../mvp/README.md)** for setup and generation.
 - **`.gitignore`** ignores **`**/corpus.jsonl`** broadly; **`mvp/data/README.md`** is the tracked stub.
 
 ### OneNote connector data and local storage
@@ -349,12 +349,12 @@ dotnet list Knode.sln package --outdated
 
 ---
 
-<h2 id="appendix-e-windows-trust">Appendix E — Windows trust + signing</h2>
+<h2 id="appendix-e-windows-trust">Appendix E - Windows trust + signing</h2>
 
 Community builds are often **unsigned**. Expect:
 
-- **SmartScreen** (“Unknown publisher”, “don’t run this often”) — users can use **More info → Run anyway** after trusting the **official Release** only. Details: **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)**.
-- **Edge / Defender** blocking download as **“virus detected”** — often **false positives** on new, unsigned EXEs. Check **Windows Security → Protection history**; optional **Microsoft false-positive submission**; publish **SHA256** on the release for integrity checks.
+- **SmartScreen** (“Unknown publisher”, “don’t run this often”) - users can use **More info → Run anyway** after trusting the **official Release** only. Details: **[`KNODE-INSTALL.md`](KNODE-INSTALL.md)**.
+- **Edge / Defender** blocking download as **“virus detected”** - often **false positives** on new, unsigned EXEs. Check **Windows Security → Protection history**; optional **Microsoft false-positive submission**; publish **SHA256** on the release for integrity checks.
 
 **Code signing (Authenticode)** improves trust and SmartScreen behavior; it is **not** a malware guarantee. **OSS projects** sometimes use **[SignPath Foundation](https://signpath.org/)** (free tier with eligibility rules) or **paid** certs.
 

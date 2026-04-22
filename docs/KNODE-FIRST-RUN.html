@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>First 15 minutes with Knode | Knode docs</title>
+  <title>Documentation | Knode docs</title>
   <link rel="stylesheet" href="assets/docs-html.css" />
 
 </head>
 <body>
   <article class="doc">
     <a class="back" href="index.html">← Documentation hub</a>
-    <h1>First 15 minutes with Knode</h1>
+    <p>﻿# First 15 minutes with Knode</p>
 <p>Use this after <strong><a href="KNODE-INSTALL.html">KNODE-INSTALL.md</a></strong>. Goal: <strong>Kindle <code>corpus.jsonl</code></strong> → <strong>(optional) OneNote sections</strong> → <strong>API key</strong> → <strong>Build index</strong> → <strong>first Ask</strong>.</p>
 <hr />
 <h2>1. Create or locate <code>corpus.jsonl</code></h2>
 <p>Knode does <strong>not</strong> ship reading data. You need a <strong>JSONL</strong> file: one JSON object per line (Kindle highlight rows). Typical path:</p>
 <ol>
 <li><strong>Capture</strong> from <a href="https://read.amazon.com/notebook">Kindle Notebook</a> with the <strong>WebView spike</strong>: <a href="https://github.com/baskar-commits/KNode/blob/main/spike/webview-notebook/README.md"><code>spike/webview-notebook/README.md</code></a>.</li>
-<li><strong>Dedupe</strong> (if needed) → run <strong><code>parse_dump</code></strong> and <strong><code>validate_corpus</code></strong> from <strong><code>mvp/</code></strong>: <a href="KNODE-MVP-GUIDE.html#4-corpus-install-and-first-run">KNODE-MVP-GUIDE.md §4</a>.</li>
+<li><strong>Dedupe</strong> (if needed) -&gt; run <strong><code>parse_dump</code></strong> and <strong><code>validate_corpus</code></strong> from <strong><code>mvp/</code></strong>: <a href="https://github.com/baskar-commits/KNode/blob/main/mvp/README.md"><code>mvp/README.md</code></a>.</li>
 </ol>
 <p><strong>In the app:</strong> <strong>Help</strong> → <em>How do I get corpus.jsonl?</em> repeats this pipeline with commands.</p>
 <hr />
@@ -32,7 +32,7 @@
 <h3>2b. OneNote (optional)</h3>
 <p>Skip this block if you only want Kindle highlights.</p>
 <ol>
-<li>Complete <strong><a href="KNODE-INSTALL.html#optional-onenote-personal-or-work-microsoft-account">KNODE-INSTALL.md § Optional: OneNote</a></strong> — Entra app registration, <strong><code>http://localhost</code></strong> redirect, delegated <strong><code>Notes.Read</code></strong>, and <strong><code>Knode:OneNote:ClientId</code></strong> in <strong><code>appsettings.Local.json</code></strong> next to <strong><code>Knode.exe</code></strong>.</li>
+<li>Complete <strong><a href="KNODE-INSTALL.html#optional-onenote-personal-or-work-microsoft-account">KNODE-INSTALL.md § Optional: OneNote</a></strong> - Entra app registration, <strong><code>http://localhost</code></strong> redirect, delegated <strong><code>Notes.Read</code></strong>, and <strong><code>Knode:OneNote:ClientId</code></strong> in <strong><code>appsettings.Local.json</code></strong> next to <strong><code>Knode.exe</code></strong>.</li>
 <li>In Setup, click <strong>Connect OneNote</strong> and sign in with the Microsoft account that owns your notebooks.</li>
 <li><strong>Select OneNote sections</strong> → pick the sections whose pages you want in the index (personal notebooks you can read in OneNote).</li>
 </ol>

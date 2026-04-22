@@ -44,7 +44,7 @@ $env:OPENAI_API_KEY = "sk-..."
 
 ## Data
 
-- **`data/corpus.jsonl`** (and **`data/chroma/`**) are **never committed**; see root **`.gitignore`** (`**/corpus.jsonl`, `mvp/data/*` with only **`mvp/data/README.md`** tracked). Clone the repo, then generate **`corpus.jsonl`** here or point Knode at your file (**[§4 in the MVP guide](../docs/KNODE-MVP-GUIDE.md#4-corpus-install-and-first-run)**).
+- **`data/corpus.jsonl`** (and **`data/chroma/`**) are **never committed**; see root **`.gitignore`** (`**/corpus.jsonl`, `mvp/data/*` with only **`mvp/data/README.md`** tracked). Clone the repo, then generate **`corpus.jsonl`** here or point Knode at your file (setup walkthrough: **[KNODE-FIRST-RUN.md](../docs/KNODE-FIRST-RUN.md)**).
 - Re-run **ingest** after changing the corpus or model.
 
 ## Next steps

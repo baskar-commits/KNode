@@ -1,4 +1,4 @@
-# First 15 minutes with Knode
+﻿# First 15 minutes with Knode
 
 Use this after **[KNODE-INSTALL.md](KNODE-INSTALL.md)**. Goal: **Kindle `corpus.jsonl`** → **(optional) OneNote sections** → **API key** → **Build index** → **first Ask**.
 
@@ -9,7 +9,7 @@ Use this after **[KNODE-INSTALL.md](KNODE-INSTALL.md)**. Goal: **Kindle `corpus.
 Knode does **not** ship reading data. You need a **JSONL** file: one JSON object per line (Kindle highlight rows). Typical path:
 
 1. **Capture** from [Kindle Notebook](https://read.amazon.com/notebook) with the **WebView spike**: [`spike/webview-notebook/README.md`](../spike/webview-notebook/README.md).
-2. **Dedupe** (if needed) → run **`parse_dump`** and **`validate_corpus`** from **`mvp/`**: [KNODE-MVP-GUIDE.md §4](KNODE-MVP-GUIDE.md#4-corpus-install-and-first-run).
+2. **Dedupe** (if needed) -> run **`parse_dump`** and **`validate_corpus`** from **`mvp/`**: [`mvp/README.md`](../mvp/README.md).
 
 **In the app:** **Help** → *How do I get corpus.jsonl?* repeats this pipeline with commands.
 
@@ -29,7 +29,7 @@ In the **left nav**, choose **Setup · Corpus & index** (gear).
 
 Skip this block if you only want Kindle highlights.
 
-1. Complete **[KNODE-INSTALL.md § Optional: OneNote](KNODE-INSTALL.md#optional-onenote-personal-or-work-microsoft-account)** — Entra app registration, **`http://localhost`** redirect, delegated **`Notes.Read`**, and **`Knode:OneNote:ClientId`** in **`appsettings.Local.json`** next to **`Knode.exe`**.
+1. Complete **[KNODE-INSTALL.md § Optional: OneNote](KNODE-INSTALL.md#optional-onenote-personal-or-work-microsoft-account)** - Entra app registration, **`http://localhost`** redirect, delegated **`Notes.Read`**, and **`Knode:OneNote:ClientId`** in **`appsettings.Local.json`** next to **`Knode.exe`**.
 2. In Setup, click **Connect OneNote** and sign in with the Microsoft account that owns your notebooks.
 3. **Select OneNote sections** → pick the sections whose pages you want in the index (personal notebooks you can read in OneNote).
 
